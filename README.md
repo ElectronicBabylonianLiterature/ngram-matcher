@@ -33,3 +33,25 @@ fragment = FragmentModel.load("Test.Fragment")
  ('ABZ461', 'ABZ1'),
  ...}
 ```
+
+## Setup
+
+In addition to installing the packages from the requirements.txt, for the time being both this repo and [ebl-api](https://github.com/ElectronicBabylonianLiterature/ebl-api) must be locally available and in the `PYTHONPATH`. In order to access the db you also need your `MONGODB_URI` set up as an environment variable. You can set up a virtual environment of your choice, here is how to do it with pipenv:
+
+1. Create a new folder, e.g., `mkdir cuneiform_matching && cd cuneiform_matching`
+2. Clone this repo and, if you did not have it yet, ebl-api:
+
+   ```sh
+   git clone https://github.com/ElectronicBabylonianLiterature/ngram-matcher.git
+   git clone https://github.com/ElectronicBabylonianLiterature/ebl-api.git
+   ```
+
+3. Create a Python 3 environment by running `pipenv --three` and run `pipenv install -r ngram-matcher/requirements.txt` to install the requirements.
+4. Create a new file named `.env` and insert the following variables, filling in your information:
+
+   ```sh
+   MONGODB_URI="mongodb://..."
+   PYTHONPATH="/Path/to/ebl-api:/Path/to/ngram-matcher:$PYTHONPATH"
+   ```
+
+5. Run `pipenv shell` to activate the environment. You can now import and use the n-gram model classes (e.g., `from fragment_model import FragmentModel`) in Python scripts, IPython, etc. from within the shell. Alternatively, you can launch your favorite code editor, e.g., `pipenv run code` for VSCode and proceed as usual.
