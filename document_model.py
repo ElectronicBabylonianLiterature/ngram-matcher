@@ -1,13 +1,31 @@
+import os
+from typing import Sequence
+
+from pymongo import MongoClient
 from util import overlap_coefficient
 import pandas as pd
 
 
 UNKNOWN_SIGN = "X"
 LINE_SEP = "#"
+DEFAULT_N_VALUES = (1, 2, 3)
 
 
 class DocumentNotFoundError(Exception):
     pass
+
+
+def fetch(query, projection, collection, db="ebldev", uri=None):
+    client = MongoClient(uri or os.environ["MONGODB_URI"])
+    database = client.get_database(db)
+
+    if data := database.get_collection(collection).find_one(
+        query,
+        projection=projection,
+    ):
+        return data
+    else:
+        raise DocumentNotFoundError(f"No document found for {query!r}")
 
 
 class DocumentModel:
@@ -23,8 +41,25 @@ class DocumentModel:
 
         return overlap_coefficient(A, B)
 
+    def get_ngrams(self, *n_values):
+        return (
+            {ngram for ngram in self.ngrams if len(ngram) in n_values}
+            if n_values
+            else self.ngrams
+        )
 
-def extract_ngrams(signs: pd.Series, n_values=(1, 2, 3)):
+    def __str__(self):
+        return "<{} {} {}>".format(
+            self.__class__.__name__,
+            self.url,
+            self.retrieved_on.strftime("%Y-%m-%d"),
+        )
+
+    def __repr__(self):
+        return str(self)
+
+
+def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):
     subframes = [
         pd.concat([signs.shift(-i) for i in range(n)], axis=1)
         .dropna()
@@ -49,7 +84,7 @@ def preprocess(raw_signs: str) -> pd.Series:
     return signs.str.split().explode()
 
 
-def linewise_ngrams(signs: pd.Series, n_values=(1, 2, 3)) -> pd.Series:
+def linewise_ngrams(signs: pd.Series, n_values: Sequence[int]) -> pd.Series:
     return (
         signs.groupby(level=0)
         .apply(extract_ngrams, n_values=n_values)

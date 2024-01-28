@@ -1,11 +1,10 @@
-import os
 import json
 import datetime
 import pandas as pd
-from pymongo import MongoClient
 from document_model import (
+    DEFAULT_N_VALUES,
     DocumentModel,
-    DocumentNotFoundError,
+    fetch,
     preprocess,
     postprocess,
     linewise_ngrams,
@@ -97,7 +96,9 @@ def url_to_query(url: str) -> dict:
 
 
 class ChapterModel(DocumentModel):
-    def __init__(self, data: dict, n_values=(1, 2, 3)):
+    _collection = "chapters"
+
+    def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
         self.signs = data["signs"]
         self._manuscripts = data["manuscripts"]
         self.id_ = data["_id"]
@@ -108,21 +109,16 @@ class ChapterModel(DocumentModel):
         self._set_ngrams()
 
     @classmethod
-    def load_json(cls, path: str, n_values=(1, 2, 3)) -> "ChapterModel":
+    def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "ChapterModel":
         with open(path) as jf:
             data = json.load(jf)
         return cls(data, n_values)
 
     @classmethod
     def load(
-        cls, url: str, n_values=(1, 2, 3), db="ebldev", uri=None
+        cls, url: str, n_values=DEFAULT_N_VALUES, db="ebldev", uri=None
     ) -> "ChapterModel":
-        client = MongoClient(uri or os.environ["MONGODB_URI"])
-        database = client.get_database(db)
-
-        collection = database.get_collection("chapters")
-
-        if data := collection.find_one(
+        data = fetch(
             url_to_query(url),
             projection={
                 "signs": 1,
@@ -131,10 +127,12 @@ class ChapterModel(DocumentModel):
                 "stage": 1,
                 "name": 1,
             },
-        ):
-            return cls(data, n_values)
-        else:
-            raise DocumentNotFoundError(f"No document found for url {url!r}")
+            collection=cls._collection,
+            db=db,
+            uri=uri,
+        )
+
+        return cls(data, n_values)
 
     def _set_ngrams(self):
         frame = (
@@ -150,19 +148,12 @@ class ChapterModel(DocumentModel):
             .agg("\n".join)
             .map(
                 lambda signs: postprocess(
-                    linewise_ngrams(preprocess(signs), n_values=(1, 2, 3))
+                    linewise_ngrams(preprocess(signs), n_values=self.n_values)
                 )
             )
             .to_dict()
         )
         self.ngrams = set.union(*self.ngrams_by_manuscript.values())
-
-    def get_ngrams(self, *n_values):
-        return (
-            {ngram for ngram in self.ngrams if len(ngram) in n_values}
-            if n_values
-            else self.ngrams
-        )
 
     def get_manuscript_ngrams(self, siglum: str, *n_values):
         return (
@@ -174,14 +165,6 @@ class ChapterModel(DocumentModel):
             if n_values
             else self.ngrams_by_manuscript[siglum]
         )
-
-    def __str__(self):
-        return "<ChapterNgramModel {} {}>".format(
-            self.url, self.retrieved_on.strftime("%Y-%m-%d")
-        )
-
-    def __repr__(self):
-        return str(self)
 
     def intersections_per_manuscript(self, other, *n_values):
         result = {}
