@@ -1,4 +1,3 @@
-from helper import PROVENANCES, PERIODS, TYPES, STAGES
 import os
 import json
 import datetime
@@ -12,8 +11,16 @@ from document_model import (
     linewise_ngrams,
 )
 from util import overlap_coefficient
+from ebl.corpus.domain.provenance import Provenance
+from ebl.transliteration.domain.stage import Stage
+from ebl.corpus.domain.manuscript import ManuscriptType
+from ebl.common.domain.period import Period
 
+PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
+STAGES = {s.value: s.abbreviation for s in Stage}
 REVERSED_STAGES = {v: k for k, v in STAGES.items()}
+MANUSCRIPT_TYPES = {m.long_name: m.abbreviation for m in ManuscriptType}
+PERIODS = {p.long_name: p.abbreviation for p in Period}
 
 
 def get_line_labels(row):
@@ -32,7 +39,7 @@ def to_siglum(manuscript: dict) -> str:
     parts = {
         "provenance": PROVENANCES,
         "period": PERIODS,
-        "type": TYPES,
+        "type": MANUSCRIPT_TYPES,
         "siglumDisambiguator": {},
     }
 
