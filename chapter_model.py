@@ -1,4 +1,3 @@
-import json
 import datetime
 import pandas as pd
 from document_model import (
@@ -107,12 +106,6 @@ class ChapterModel(DocumentModel):
         self.n_values = n_values
         self.retrieved_on = datetime.datetime.now()
         self._set_ngrams()
-
-    @classmethod
-    def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "ChapterModel":
-        with open(path) as jf:
-            data = json.load(jf)
-        return cls(data, n_values)
 
     @classmethod
     def load(

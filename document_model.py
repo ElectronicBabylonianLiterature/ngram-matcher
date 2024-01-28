@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Sequence
 
@@ -29,6 +30,14 @@ def fetch(query, projection, collection, db="ebldev", uri=None):
 
 
 class DocumentModel:
+    @classmethod
+    def load_json(
+        cls, path: str, n_values=DEFAULT_N_VALUES
+    ) -> "DocumentModel":
+        with open(path) as jf:
+            data = json.load(jf)
+        return cls(data, n_values)
+
     def intersection(self, other, *n_values):
         A = self.get_ngrams(*n_values)
         B = other.get_ngrams(*n_values)
