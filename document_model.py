@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 from typing import Sequence
 
 from pymongo import MongoClient
@@ -66,6 +67,22 @@ class DocumentModel:
 
     def __repr__(self):
         return str(self)
+
+    def save_pickle(self, path: str):
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load_pickle(cls, path: str):
+        with open(path, "rb") as f:
+            model = pickle.load(f)
+
+        if not isinstance(model, cls):
+            raise TypeError(
+                f"{cls.__name__} cannot load {model.__class__.__name__} data"
+            )
+
+        return model
 
 
 def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):
