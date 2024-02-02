@@ -9,10 +9,7 @@ from document_model import (
     linewise_ngrams,
 )
 from util import overlap_coefficient
-from ebl.corpus.domain.provenance import Provenance
-from ebl.transliteration.domain.stage import Stage
-from ebl.corpus.domain.manuscript import ManuscriptType
-from ebl.common.domain.period import Period
+from ebl_enums import Provenance, Stage, ManuscriptType, Period
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
 STAGES = {s.value: s.abbreviation for s in Stage}
@@ -42,17 +39,14 @@ def to_siglum(manuscript: dict) -> str:
     }
 
     return "".join(
-        mapper.get(manuscript[key], manuscript[key])
-        for key, mapper in parts.items()
+        mapper.get(manuscript[key], manuscript[key]) for key, mapper in parts.items()
     )
 
 
 def set_sigla(frame):
     frame = frame.dropna(subset="signs")
 
-    return frame.assign(siglum=frame.manuscript.map(to_siglum)).set_index(
-        "siglum"
-    )
+    return frame.assign(siglum=frame.manuscript.map(to_siglum)).set_index("siglum")
 
 
 def drop_colophon_lines(frame):
@@ -129,9 +123,7 @@ class ChapterModel(DocumentModel):
 
     def _set_ngrams(self):
         frame = (
-            pd.DataFrame(
-                {"manuscript": self._manuscripts, "signs": self.signs}
-            )
+            pd.DataFrame({"manuscript": self._manuscripts, "signs": self.signs})
             .pipe(set_sigla)
             .pipe(drop_colophon_lines)
         )
