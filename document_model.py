@@ -1,7 +1,7 @@
 import json
 import os
 import pickle
-from typing import Sequence
+from typing import Literal, Sequence
 
 from pymongo import MongoClient
 from util import overlap_coefficient
@@ -17,7 +17,13 @@ class DocumentNotFoundError(Exception):
     pass
 
 
-def fetch(query, projection, collection, db="ebldev", uri=None):
+def fetch(
+    query: dict,
+    projection: dict,
+    collection: Literal["chapters", "fragments"],
+    db="ebldev",
+    uri=None,
+):
     client = MongoClient(uri or os.environ["MONGODB_URI"])
     database = client.get_database(db)
 
@@ -32,9 +38,7 @@ def fetch(query, projection, collection, db="ebldev", uri=None):
 
 class DocumentModel:
     @classmethod
-    def load_json(
-        cls, path: str, n_values=DEFAULT_N_VALUES
-    ) -> "DocumentModel":
+    def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "DocumentModel":
         with open(path) as jf:
             data = json.load(jf)
         return cls(data, n_values)
