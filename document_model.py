@@ -72,12 +72,12 @@ class DocumentModel:
     def __repr__(self):
         return str(self)
 
-    def save_pickle(self, path: str):
+    def save(self, path: str):
         with open(path, "wb") as f:
             pickle.dump(self, f)
 
     @classmethod
-    def load_pickle(cls, path: str):
+    def open(cls, path: str):
         with open(path, "rb") as f:
             model = pickle.load(f)
 
