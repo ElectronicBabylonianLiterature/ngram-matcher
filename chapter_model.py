@@ -1,4 +1,3 @@
-import datetime
 import pandas as pd
 from document_model import (
     DEFAULT_N_VALUES,
@@ -92,13 +91,11 @@ class ChapterModel(DocumentModel):
     _collection = "chapters"
 
     def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
-        self.signs = data["signs"]
+        super().__init__(data["_id"], data["signs"], n_values)
+
         self._manuscripts = data["manuscripts"]
-        self.id_ = data["_id"]
         self.url = to_url(data)
 
-        self.n_values = n_values
-        self.retrieved_on = datetime.datetime.now()
         self._set_ngrams()
 
     @classmethod
