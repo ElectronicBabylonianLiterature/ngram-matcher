@@ -1,7 +1,8 @@
+import datetime
 import json
 import os
 import pickle
-from typing import Literal, Sequence
+from typing import Dict, Literal, Sequence
 
 from pymongo import MongoClient
 from util import overlap_coefficient
@@ -79,6 +80,28 @@ class DocumentModel:
 
     def __repr__(self):
         return str(self)
+
+    @property
+    def _vocab(self):
+        return {sign for ngram in self for sign in ngram}
+
+    def _compress(self, encoder: Dict[str, int]):
+        if not self.is_compressed:
+
+            def encode_ngram(ngram):
+                return tuple(encoder[sign] for sign in ngram)
+
+            self.ngrams = set(map(encode_ngram, self.ngrams))
+            self.is_compressed = True
+
+    def _decompress(self, decoder: Dict[int, str]):
+        if self.is_compressed:
+
+            def decode_ngram(ngram):
+                return tuple(decoder[id_] for id_ in ngram)
+
+            self.ngrams = set(map(decode_ngram, self.ngrams))
+            self.is_compressed = False
 
     def save(self, path: str):
         with open(path, "wb") as f:
