@@ -37,6 +37,14 @@ def fetch(
 
 
 class DocumentModel:
+
+    def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
+        self.id_ = self.url = id_
+        self.signs = signs
+        self.n_values = n_values
+        self.retrieved_on = datetime.datetime.now()
+        self.is_compressed = False
+
     @classmethod
     def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "DocumentModel":
         with open(path) as jf:
