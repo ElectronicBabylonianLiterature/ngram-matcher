@@ -1,4 +1,3 @@
-import datetime
 from document_model import (
     DEFAULT_N_VALUES,
     DocumentModel,
@@ -13,11 +12,8 @@ class FragmentModel(DocumentModel):
     _collection = "fragments"
 
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
-        self.id_ = self.url = id_
-        self.signs = signs
+        super().__init__(id_, signs, n_values)
 
-        self.n_values = n_values
-        self.retrieved_on = datetime.datetime.now()
         self._set_ngrams()
 
     @classmethod
