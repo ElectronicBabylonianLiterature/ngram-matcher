@@ -44,3 +44,9 @@ class FragmentModel(DocumentModel):
             .pipe(postprocess)
         )
         return self
+
+    def __iter__(self):
+        return iter(self.ngrams)
+
+    def __len__(self):
+        return len(self.ngrams)
