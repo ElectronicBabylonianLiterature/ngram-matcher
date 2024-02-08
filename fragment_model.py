@@ -12,9 +12,9 @@ from document_model import (
 class FragmentModel(DocumentModel):
     _collection = "fragments"
 
-    def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
-        self.signs = data["signs"]
-        self.id_ = self.url = data["_id"]
+    def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
+        self.id_ = self.url = id_
+        self.signs = signs
 
         self.n_values = n_values
         self.retrieved_on = datetime.datetime.now()
@@ -22,7 +22,11 @@ class FragmentModel(DocumentModel):
 
     @classmethod
     def load(
-        cls, id_: str, n_values=DEFAULT_N_VALUES, db="ebldev", uri=None
+        cls,
+        id_: str,
+        n_values=DEFAULT_N_VALUES,
+        db="ebldev",
+        uri=None,
     ) -> "FragmentModel":
         data = fetch(
             {"_id": id_},
@@ -31,8 +35,7 @@ class FragmentModel(DocumentModel):
             db=db,
             uri=uri,
         )
-
-        return cls(data, n_values)
+        return cls(data["_id"], data["signs"], n_values)
 
     def _set_ngrams(self):
         self.ngrams = (
@@ -40,3 +43,4 @@ class FragmentModel(DocumentModel):
             .pipe(linewise_ngrams, n_values=self.n_values)
             .pipe(postprocess)
         )
+        return self
