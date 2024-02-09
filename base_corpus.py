@@ -36,10 +36,12 @@ def get_total(
 
 class BaseCorpus:
 
-    def __init__(self, n_values):
+    def __init__(self, n_values, name=""):
         self.n_values = n_values
         self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()
+        self.documents = []
+        self.name = name
 
     def _compress(self):
         if not self.is_compressed:
@@ -80,3 +82,12 @@ class BaseCorpus:
 
     def __iter__(self):
         return iter(self.documents)
+
+    def __str__(self):
+        return "<{} {}>".format(
+            self.name or self.__class__.__name__,
+            self.retrieved_on.strftime("%Y-%m-%d"),
+        )
+
+    def __repr__(self):
+        return str(self)
