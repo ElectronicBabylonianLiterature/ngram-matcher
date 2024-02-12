@@ -1,9 +1,13 @@
 import os
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 import pickle
 import datetime
 from typing import Literal
+import pandas as pd
 
 from pymongo import MongoClient
+from tqdm import tqdm
 
 
 def fetch_all(
@@ -22,26 +26,19 @@ def fetch_all(
     )
 
 
-def get_total(
-    query: dict,
-    collection: Literal["chapters", "fragments"],
-    db="ebldev",
-    uri=None,
-):
-    client = MongoClient(uri or os.environ["MONGODB_URI"])
-    database = client.get_database(db)
-
-    return database.get_collection(collection).count_documents(query)
-
-
 class BaseCorpus:
+    _collection = ""
 
-    def __init__(self, n_values, name=""):
+    def __init__(self, data, n_values, show_progress=False, threading=False, name=""):
         self.n_values = n_values
         self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()
-        self.documents = []
         self.name = name
+        self._tqdm_config = {
+            "total": len(data) if show_progress else 0,
+            "desc": "Building model",
+            "disable": not show_progress,
+        }
 
     def _compress(self):
         if not self.is_compressed:
@@ -76,6 +73,30 @@ class BaseCorpus:
         model._decompress()
 
         return model
+
+    def to_series(self, data: list) -> pd.Series:
+        return pd.Series(data, index=[item.id_ for item in data], name=self._collection)
+
+    def _load(self, data: dict):
+        return self.to_series(
+            [
+                self._create_model(entry, self.n_values)
+                for entry in tqdm(data, **self._tqdm_config)
+            ]
+        )
+
+    def _load_threading(self, data: dict):
+        with ProcessPoolExecutor() as executor:
+            result = list(
+                tqdm(
+                    executor.map(
+                        partial(self._create_model, n_values=self.n_values), data
+                    ),
+                    **self._tqdm_config,
+                )
+            )
+
+        return self.to_series(result)
 
     def __len__(self):
         return len(self.documents)
