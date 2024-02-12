@@ -83,7 +83,7 @@ class DocumentModel:
 
     @property
     def _vocab(self):
-        return {sign for ngram in self for sign in ngram}
+        return {sign for ngram in self.ngrams for sign in ngram}
 
     def _compress(self, encoder: Dict[str, int]):
         if not self.is_compressed:
@@ -136,23 +136,18 @@ def preprocess(raw_signs: str) -> pd.Series:
     signs = pd.Series(raw_signs)
 
     signs = signs.str.split("\n").explode().reset_index(drop=True)
-    signs = signs.str.replace(
-        rf"{UNKNOWN_SIGN}[\s{UNKNOWN_SIGN}]*", f"{UNKNOWN_SIGN} ", regex=True
-    ).str.strip()
-    signs = signs[~signs.str.fullmatch(rf"[{UNKNOWN_SIGN}\s]*")]
-    signs = signs.add(f" {LINE_SEP}")
+    signs = signs.str.strip()
+    signs.iloc[:-1] = signs.iloc[:-1].add(f" {LINE_SEP}")
+    signs = signs[~signs.str.fullmatch(rf"[{UNKNOWN_SIGN}{LINE_SEP}\s]*")]
+    signs = signs.str.split().explode()
 
-    return signs.str.split().explode()
+    return signs[signs.ne(UNKNOWN_SIGN)]
 
 
 def linewise_ngrams(signs: pd.Series, n_values: Sequence[int]) -> pd.Series:
-    return (
-        signs.groupby(level=0)
-        .apply(extract_ngrams, n_values=n_values)
-        .reset_index(drop=True)
-    )
+    return extract_ngrams(signs, n_values).reset_index(drop=True)
 
 
 def postprocess(signs: pd.Series):
-    signs = signs[~signs.map(set).map(lambda ngram: ngram <= {"X", "#"})]
+    signs = signs[~signs.map(set).map(lambda ngram: ngram <= {"X"})]
     return set(signs)
