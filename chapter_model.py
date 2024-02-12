@@ -66,8 +66,8 @@ def to_url(data: dict):
             [
                 "",
                 text_id["genre"],
-                text_id["category"],
-                text_id["index"],
+                int(text_id["category"]),
+                int(text_id["index"]),
                 STAGES[data["stage"]],
                 data["name"],
             ],
@@ -135,7 +135,12 @@ class ChapterModel(DocumentModel):
             )
             .to_dict()
         )
-        self.ngrams = set.union(*self.ngrams_by_manuscript.values())
+
+        self.ngrams = (
+            set.union(*ngrams.values())
+            if (ngrams := self.ngrams_by_manuscript)
+            else set()
+        )
 
     def get_manuscript_ngrams(self, siglum: str, *n_values):
         return (
