@@ -1,13 +1,17 @@
+from operator import attrgetter
 import os
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
+from functools import partial, singledispatchmethod
 import pickle
 import datetime
 from typing import Literal
 import pandas as pd
+import numpy as np
 
 from pymongo import MongoClient
 from tqdm import tqdm
+
+from document_model import DocumentModel
 
 
 def fetch_all(
@@ -59,6 +63,10 @@ class BaseCorpus:
         with open(path, "wb") as f:
             pickle.dump(self, f)
         self._decompress()
+
+    @property
+    def ngrams_by_document(self):
+        return self.documents.map(attrgetter("ngrams"))
 
     @classmethod
     def open(cls, path: str):
@@ -112,3 +120,34 @@ class BaseCorpus:
 
     def __repr__(self):
         return str(self)
+
+    def __and__(self, other):
+        return self.intersection(other)
+
+    @singledispatchmethod
+    def intersection(self, other):
+        raise NotImplementedError(
+            f"Cannot intersect {self.__class__.__name__} "
+            f"with {other.__class__.__name__}"
+        )
+
+    @intersection.register
+    def _(self, other: DocumentModel):
+        return pd.Series(
+            np.vectorize(set.intersection)(
+                np.array([other.ngrams], dtype=object), self.ngrams_by_chapter
+            ),
+            index=self.chapters.index,
+            name=other.id_,
+        )
+
+
+@BaseCorpus.intersection.register
+def _(self, other: BaseCorpus):
+    return pd.DataFrame(
+        np.vectorize(set.intersection)(
+            self.ngrams_by_document.values[:, None], other.ngrams_by_document
+        ),
+        index=self.documents.index,
+        columns=other.documents.index,
+    )
