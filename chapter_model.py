@@ -94,7 +94,7 @@ class ChapterModel(DocumentModel):
         super().__init__(data["_id"], data["signs"], n_values)
 
         self._manuscripts = data["manuscripts"]
-        self.url = to_url(data)
+        self.id_ = self.url = to_url(data)
 
         self._set_ngrams()
 
