@@ -12,6 +12,7 @@ from pymongo import MongoClient
 from tqdm import tqdm
 
 from document_model import DocumentModel
+from metrics import no_weight, weight_by_len
 
 
 def fetch_all(
@@ -132,14 +133,33 @@ class BaseCorpus:
         )
 
     @intersection.register
-    def _(self, other: DocumentModel):
+    def _(self, other: DocumentModel) -> pd.Series:
         return pd.Series(
-            np.vectorize(set.intersection)(
-                np.array([other.ngrams], dtype=object), self.ngrams_by_chapter
-            ),
-            index=self.chapters.index,
+            np.vectorize(set.intersection)(other.ngrams, self.ngrams_by_document),
+            index=self.documents.index,
             name=other.id_,
         )
+
+    @singledispatchmethod
+    def match(self, other):
+        raise NotImplementedError(
+            f"Cannot match {self.__class__.__name__} "
+            f"with {other.__class__.__name__}"
+        )
+
+    @match.register
+    def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
+        intersection = self.intersection(other)
+        weighted_sum = weight_by_len if length_weighting else no_weight
+
+        intersection_sizes = weighted_sum(intersection)
+        self_sizes = weighted_sum(self.ngrams_by_document)
+        other_size = weighted_sum(other.ngrams)
+
+        result = intersection_sizes / np.minimum(self_sizes, other_size)
+        result = result.rename(other.id_)
+
+        return result.sort_values(ascending=False)
 
 
 @BaseCorpus.intersection.register
@@ -150,4 +170,19 @@ def _(self, other: BaseCorpus):
         ),
         index=self.documents.index,
         columns=other.documents.index,
+    )
+
+
+@BaseCorpus.match.register
+def _(self, other: BaseCorpus, length_weighting=False) -> BaseCorpus:
+    intersection = self.intersection(other)
+    weighted_sum = weight_by_len if length_weighting else no_weight
+
+    intersection_sizes = weighted_sum(intersection)
+    self_sizes = weighted_sum(self.ngrams_by_document)
+    other_sizes = weighted_sum(other.ngrams_by_document)
+
+    return intersection_sizes / np.minimum(
+        self_sizes.values[:, None],
+        other_sizes,
     )
