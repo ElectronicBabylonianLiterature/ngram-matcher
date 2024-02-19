@@ -106,7 +106,7 @@ class DocumentModel:
 
     def __str__(self):
         return "<{} {} {}>".format(
-            self.__class__.__name__,
+            type(self).__name__,
             self.url,
             self.retrieved_on.strftime("%Y-%m-%d"),
         )
