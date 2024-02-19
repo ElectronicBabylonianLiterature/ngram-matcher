@@ -1,7 +1,16 @@
-from typing import Sequence
+from typing import Sequence, TypedDict
 from base_corpus import BaseCorpus
 from chapter_model import ChapterModel
 from document_model import DEFAULT_N_VALUES
+
+
+class ChapterRecord(TypedDict):
+    _id: str
+    signs: list
+    manuscripts: list
+    textId: dict
+    stage: int
+    name: str
 
 
 class ChapterCorpus(BaseCorpus):
@@ -17,7 +26,7 @@ class ChapterCorpus(BaseCorpus):
 
     def __init__(
         self,
-        data: Sequence[dict],
+        data: Sequence[ChapterRecord],
         n_values=DEFAULT_N_VALUES,
         show_progress=False,
         threading=True,

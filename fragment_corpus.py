@@ -1,7 +1,12 @@
-from typing import Sequence
+from typing import Sequence, TypedDict
 from base_corpus import BaseCorpus
 from document_model import DEFAULT_N_VALUES
 from fragment_model import FragmentModel
+
+
+class FragmentRecord(TypedDict):
+    _id: str
+    signs: str
 
 
 class FragmentCorpus(BaseCorpus):
@@ -11,7 +16,7 @@ class FragmentCorpus(BaseCorpus):
 
     def __init__(
         self,
-        data: Sequence[dict],
+        data: Sequence[FragmentRecord],
         n_values=DEFAULT_N_VALUES,
         show_progress=False,
         threading=True,
