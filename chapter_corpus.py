@@ -1,7 +1,10 @@
+from operator import contains
 from typing import Sequence
 from base_corpus import BaseCorpus, fetch_all
 from chapter_model import ChapterModel
 from document_model import DEFAULT_N_VALUES
+import pandas as pd
+import numpy as np
 
 
 class ChapterCorpus(BaseCorpus):
@@ -25,6 +28,7 @@ class ChapterCorpus(BaseCorpus):
             for ngram in document.ngrams
             for sign in ngram
         }
+        self._ngrams = None
 
     @classmethod
     def load(
@@ -37,7 +41,7 @@ class ChapterCorpus(BaseCorpus):
         name="",
         **kwargs,
     ) -> "ChapterCorpus":
-        query = {"signs": {"$regex": "."}}
+        query = {"signs": {"$regex": "."}, "textId.category": {"$ne": 99}}
         data = fetch_all(
             query,
             projection={
@@ -52,19 +56,40 @@ class ChapterCorpus(BaseCorpus):
             uri=uri,
             **kwargs,
         )
-        if show_progress:
-            return cls(
-                list(data),
-                n_values,
-                show_progress,
-                name=name,
-                threading=threading,
-            )
-
-        return cls(data, n_values, name=name, threading=threading)
+        return cls(
+            list(data) if show_progress else data,
+            n_values,
+            show_progress,
+            name,
+            threading,
+        )
 
     def _create_model(self, entry, n_values):
         return ChapterModel(entry, n_values=n_values)
 
-    def _ngrams(self):
-        return {ngram for chapter in self.chapters for ngram in chapter.get_ngrams()}
+    @property
+    def ngrams(self):
+        if self._ngrams is None:
+            self._ngrams = {
+                ngram for chapter in self.chapters for ngram in chapter.get_ngrams()
+            }
+        return self._ngrams
+
+    @property
+    def ngrams_by_chapter(self):
+        return self.ngrams_by_document
+
+    def _init_idf(self):
+        unique_ngrams = pd.Series(list(self.ngrams))
+
+        df = pd.DataFrame(
+            np.vectorize(contains)(
+                self.ngrams_by_chapter, unique_ngrams.values[:, None]
+            ),
+            index=unique_ngrams,
+        )
+        N = len(self.chapters) + 1
+        docs_with_ngram = df.sum(axis=1) + 1
+
+        idf = np.log(N / docs_with_ngram) + 1
+        self.idf_table = idf.to_dict()
