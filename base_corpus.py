@@ -1,4 +1,4 @@
-from operator import attrgetter
+from operator import attrgetter, contains
 import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, singledispatchmethod
@@ -10,8 +10,10 @@ import numpy as np
 
 from pymongo import MongoClient
 from tqdm import tqdm
+from chapter_model import ChapterModel
 
 from document_model import DocumentModel
+from fragment_model import FragmentModel
 from metrics import no_weight, weight_by_len
 
 
@@ -44,6 +46,8 @@ class BaseCorpus:
             "desc": "Building model",
             "disable": not show_progress,
         }
+        self.idf_table = None
+        self._ngrams = None
 
     def _compress(self):
         if not self.is_compressed:
@@ -75,9 +79,7 @@ class BaseCorpus:
             model = pickle.load(f)
 
         if not isinstance(model, cls):
-            raise TypeError(
-                f"{cls.__name__} cannot load {model.__class__.__name__} data"
-            )
+            raise TypeError(f"{cls.__name__} cannot load {type(model).__name__} data")
 
         model._decompress()
 
@@ -115,7 +117,7 @@ class BaseCorpus:
 
     def __str__(self):
         return "<{} {}>".format(
-            self.name or self.__class__.__name__,
+            self.name or type(self).__name__,
             self.retrieved_on.strftime("%Y-%m-%d"),
         )
 
@@ -125,14 +127,22 @@ class BaseCorpus:
     def __and__(self, other):
         return self.intersection(other)
 
+    @property
+    def ngrams(self):
+        if self._ngrams is None:
+            self._ngrams = {
+                ngram for document in self.documents for ngram in document.get_ngrams()
+            }
+        return self._ngrams
+
     @singledispatchmethod
     def intersection(self, other):
         raise NotImplementedError(
-            f"Cannot intersect {self.__class__.__name__} "
-            f"with {other.__class__.__name__}"
+            f"Cannot intersect {type(self).__name__} " f"with {type(other).__name__}"
         )
 
-    @intersection.register
+    @intersection.register(FragmentModel)
+    @intersection.register(ChapterModel)
     def _(self, other: DocumentModel) -> pd.Series:
         return pd.Series(
             np.vectorize(set.intersection)(other.ngrams, self.ngrams_by_document),
@@ -143,11 +153,11 @@ class BaseCorpus:
     @singledispatchmethod
     def match(self, other):
         raise NotImplementedError(
-            f"Cannot match {self.__class__.__name__} "
-            f"with {other.__class__.__name__}"
+            f"Cannot match {type(self).__name__} " f"with {type(other).__name__}"
         )
 
-    @match.register
+    @match.register(FragmentModel)
+    @match.register(ChapterModel)
     def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
         intersection = self.intersection(other)
         weighted_sum = weight_by_len if length_weighting else no_weight
@@ -160,6 +170,45 @@ class BaseCorpus:
         result = result.rename(other.id_)
 
         return result.sort_values(ascending=False)
+
+    def _init_idf(self) -> None:
+        if self.idf_table is not None:
+            return
+
+        unique_ngrams = pd.Series(list(self.ngrams))
+
+        df = pd.DataFrame(
+            np.vectorize(contains)(
+                self.ngrams_by_document, unique_ngrams.values[:, None]
+            ),
+            index=unique_ngrams,
+        )
+        N = len(self.documents) + 1
+        docs_with_ngram = df.sum(axis=1) + 1
+
+        idf = np.log(N / docs_with_ngram) + 1
+        self.idf_table = idf.to_dict()
+
+    def _weight_tf_idf(self, ngrams: set):
+        return sum(self.idf_table.get(term, 0) for term in ngrams)
+
+    def _weight_tf_idf_length(self, ngrams: set):
+        return sum(self.idf_table.get(term, 0) * len(term) ** 2 for term in ngrams)
+
+    @singledispatchmethod
+    def match_tf_idf(self, other):
+        raise NotImplementedError(
+            f"Cannot match {type(self).__name__} " f"with {type(other).__name__}"
+        )
+
+    @match_tf_idf.register(FragmentModel)
+    @match_tf_idf.register(ChapterModel)
+    def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
+        self._init_idf()
+        weight_func = (
+            self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
+        )
+        return self.intersection(other).map(weight_func).sort_values(ascending=False)
 
 
 @BaseCorpus.intersection.register
@@ -174,11 +223,10 @@ def _(self, other: BaseCorpus):
 
 
 @BaseCorpus.match.register
-def _(self, other: BaseCorpus, length_weighting=False) -> BaseCorpus:
-    intersection = self.intersection(other)
+def _(self, other: BaseCorpus, length_weighting=False) -> pd.DataFrame:
     weighted_sum = weight_by_len if length_weighting else no_weight
 
-    intersection_sizes = weighted_sum(intersection)
+    intersection_sizes = weighted_sum(self.intersection(other))
     self_sizes = weighted_sum(self.ngrams_by_document)
     other_sizes = weighted_sum(other.ngrams_by_document)
 
@@ -186,3 +234,12 @@ def _(self, other: BaseCorpus, length_weighting=False) -> BaseCorpus:
         self_sizes.values[:, None],
         other_sizes,
     )
+
+
+@BaseCorpus.match_tf_idf.register
+def _(self, other: BaseCorpus, length_weighting=False) -> pd.DataFrame:
+    self._init_idf()
+    weight_func = (
+        self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
+    )
+    return self.intersection(other).map(weight_func)
