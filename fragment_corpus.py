@@ -55,14 +55,5 @@ class FragmentCorpus(BaseCorpus):
 
         return cls(data, n_values, name=name, threading=threading)
 
-    def match(self, other, *n_values):
-        return [
-            (
-                fragment.id_,
-                fragment.similarity(other, *n_values),
-            )
-            for fragment in self.fragments
-        ]
-
     def _create_model(self, entry, n_values):
         return FragmentModel(entry["_id"], entry["signs"], n_values=n_values)
