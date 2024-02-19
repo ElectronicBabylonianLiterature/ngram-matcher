@@ -12,7 +12,7 @@ from pymongo import MongoClient
 from tqdm import tqdm
 from chapter_model import ChapterModel
 
-from document_model import DocumentModel
+from document_model import DEFAULT_N_VALUES, DocumentModel
 from fragment_model import FragmentModel
 from metrics import no_weight, weight_by_len
 
@@ -87,6 +87,33 @@ class BaseCorpus:
 
     def to_series(self, data: list) -> pd.Series:
         return pd.Series(data, index=[item.id_ for item in data], name=self._collection)
+
+    @classmethod
+    def load(
+        cls,
+        n_values=DEFAULT_N_VALUES,
+        db="ebldev",
+        uri=None,
+        show_progress=True,
+        threading=True,
+        name="",
+        **kwargs,
+    ):
+        data = fetch_all(
+            cls._query,
+            projection=cls._projection,
+            collection=cls._collection,
+            db=db,
+            uri=uri,
+            **kwargs,
+        )
+        return cls(
+            list(data) if show_progress else data,
+            n_values,
+            show_progress,
+            name,
+            threading,
+        )
 
     def _load(self, data: dict):
         return self.to_series(
