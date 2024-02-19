@@ -7,7 +7,6 @@ from document_model import (
     postprocess,
     linewise_ngrams,
 )
-from util import overlap_coefficient
 from ebl_enums import Provenance, Stage, ManuscriptType, Period
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
@@ -151,25 +150,3 @@ class ChapterModel(DocumentModel):
             if n_values
             else self.ngrams_by_manuscript[siglum]
         )
-
-    def intersections_per_manuscript(self, other, *n_values):
-        result = {}
-
-        for siglum in self.ngrams_by_manuscript:
-            A = self.get_manuscript_ngrams(siglum, *n_values)
-            B = other.get_ngrams(*n_values)
-
-            result[siglum] = A & B
-
-        return result
-
-    def similarities_per_manuscript(self, other, *n_values):
-        result = {}
-
-        for siglum in self.ngrams_by_manuscript:
-            A = self.get_manuscript_ngrams(siglum, *n_values)
-            B = other.get_ngrams(*n_values)
-
-            result[siglum] = overlap_coefficient(A, B)
-
-        return result
