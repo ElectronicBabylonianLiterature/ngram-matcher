@@ -14,7 +14,7 @@ class FragmentModel(DocumentModel):
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
         super().__init__(id_, signs, n_values)
 
-        self._set_ngrams()
+        self._extract_ngrams()
 
     @classmethod
     def load(
@@ -33,7 +33,7 @@ class FragmentModel(DocumentModel):
         )
         return cls(data["_id"], data["signs"], n_values)
 
-    def _set_ngrams(self):
+    def _extract_ngrams(self):
         self.ngrams = (
             preprocess(self.signs)
             .pipe(linewise_ngrams, n_values=self.n_values)

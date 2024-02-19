@@ -95,8 +95,7 @@ class ChapterModel(DocumentModel):
 
         self._manuscripts = data["manuscripts"]
         self.id_ = self.url = to_url(data)
-
-        self._set_ngrams()
+        self._extract_ngrams()
 
     @classmethod
     def load(
@@ -118,7 +117,7 @@ class ChapterModel(DocumentModel):
 
         return cls(data, n_values)
 
-    def _set_ngrams(self):
+    def _extract_ngrams(self):
         frame = (
             pd.DataFrame({"manuscript": self._manuscripts, "signs": self.signs})
             .pipe(set_sigla)
