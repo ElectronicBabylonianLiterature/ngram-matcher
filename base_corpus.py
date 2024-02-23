@@ -97,10 +97,11 @@ class BaseCorpus:
         show_progress=True,
         threading=True,
         name="",
+        query={},
         **kwargs,
     ):
         data = fetch_all(
-            cls._query,
+            {**cls._query, **query},
             projection=cls._projection,
             collection=cls._collection,
             db=db,
