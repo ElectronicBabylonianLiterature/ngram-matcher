@@ -116,7 +116,7 @@ class BaseCorpus:
             name,
         )
 
-    def _load(self, data: dict):
+    def _load(self, data: dict) -> pd.Series:
         return self.to_series(
             [
                 self._create_model(entry, self.n_values)
@@ -124,7 +124,7 @@ class BaseCorpus:
             ]
         )
 
-    def _load_threading(self, data: dict):
+    def _load_threading(self, data: dict) -> pd.Series:
         with ProcessPoolExecutor() as executor:
             result = list(
                 tqdm(
