@@ -112,8 +112,8 @@ class BaseCorpus:
             list(data) if show_progress else data,
             n_values,
             show_progress,
-            name,
             threading,
+            name,
         )
 
     def _load(self, data: dict):
