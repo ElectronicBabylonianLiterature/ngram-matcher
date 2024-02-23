@@ -68,7 +68,7 @@ def to_url(data: dict):
                 int(text_id["category"]),
                 int(text_id["index"]),
                 STAGES[data["stage"]],
-                data["name"],
+                data["name"].strip(),
             ],
         )
     )
@@ -86,12 +86,22 @@ def url_to_query(url: str) -> dict:
     }
 
 
+class TextId:
+    def __init__(self, data: dict):
+        self.genre = data["genre"]
+        self.category = int(data["category"])
+        self.index = int(data["index"])
+
+
 class ChapterModel(DocumentModel):
     _collection = "chapters"
 
     def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
         super().__init__(data["_id"], data["signs"], n_values)
 
+        self.text_id = TextId(data["textId"])
+        self.stage = data["stage"]
+        self.name = data["name"]
         self._manuscripts = data["manuscripts"]
         self.id_ = self.url = to_url(data)
         self._extract_ngrams()
