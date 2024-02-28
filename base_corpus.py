@@ -1,14 +1,11 @@
 from operator import attrgetter, contains
-import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, singledispatchmethod
 import pickle
 import datetime
-from typing import Literal
 import pandas as pd
 import numpy as np
 
-from pymongo import MongoClient
 import requests
 from tqdm import tqdm
 from chapter_model import ChapterModel
@@ -18,22 +15,6 @@ from fragment_model import FragmentModel
 from metrics import no_weight, weight_by_len
 
 API_URL = "http://localhost:8000/"
-
-
-def fetch_all(
-    query: dict,
-    projection: dict,
-    collection: Literal["chapters", "fragments"],
-    db="ebldev",
-    uri=None,
-    **kwargs,
-):
-    client = MongoClient(uri or os.environ["MONGODB_URI"])
-    database = client.get_database(db)
-
-    return database.get_collection(collection).find(
-        query, projection=projection, **kwargs
-    )
 
 
 class BaseCorpus:
