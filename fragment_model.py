@@ -1,11 +1,22 @@
+import requests
 from document_model import (
     DEFAULT_N_VALUES,
     DocumentModel,
-    fetch,
     preprocess,
     postprocess,
     linewise_ngrams,
 )
+
+FRAGMENTS_API = "https://www.ebl.lmu.de/api/fragments/"
+
+
+def fetch_fragment(id_: str):
+    response = requests.get(f"{FRAGMENTS_API}{id_}")
+
+    response.raise_for_status()
+    data = {"signs": response.json()["signs"], "_id": id_}
+
+    return data
 
 
 class FragmentModel(DocumentModel):
@@ -17,20 +28,8 @@ class FragmentModel(DocumentModel):
         self._extract_ngrams()
 
     @classmethod
-    def load(
-        cls,
-        id_: str,
-        n_values=DEFAULT_N_VALUES,
-        db="ebldev",
-        uri=None,
-    ) -> "FragmentModel":
-        data = fetch(
-            {"_id": id_},
-            projection={"signs": 1},
-            collection=cls._collection,
-            db=db,
-            uri=uri,
-        )
+    def load(cls, id_: str, n_values=DEFAULT_N_VALUES) -> "FragmentModel":
+        data = fetch_fragment(id_)
         return cls(data["_id"], data["signs"], n_values)
 
     def _extract_ngrams(self):
