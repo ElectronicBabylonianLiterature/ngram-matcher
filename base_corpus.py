@@ -36,7 +36,7 @@ def fetch_all(
 class BaseCorpus:
     _collection = ""
 
-    def __init__(self, data, n_values, show_progress=False, threading=False, name=""):
+    def __init__(self, data, n_values, show_progress=False, name=""):
         self.n_values = n_values
         self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()

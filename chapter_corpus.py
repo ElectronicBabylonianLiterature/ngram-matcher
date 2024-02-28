@@ -32,7 +32,7 @@ class ChapterCorpus(BaseCorpus):
         threading=True,
         name="",
     ):
-        super().__init__(data, n_values, show_progress, threading, name)
+        super().__init__(data, n_values, show_progress, name)
 
         load = self._load_threading if threading else self._load
         self.documents = self.chapters = load(data)
