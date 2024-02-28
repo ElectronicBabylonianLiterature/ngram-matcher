@@ -12,8 +12,8 @@ FRAGMENTS_API = "https://www.ebl.lmu.de/api/fragments/"
 
 def fetch_fragment(id_: str):
     response = requests.get(f"{FRAGMENTS_API}{id_}")
-
     response.raise_for_status()
+
     data = {"signs": response.json()["signs"], "_id": id_}
 
     return data
