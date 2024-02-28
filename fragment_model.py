@@ -14,7 +14,7 @@ def fetch_fragment(id_: str):
     response = requests.get(f"{FRAGMENTS_API}{id_}")
     response.raise_for_status()
 
-    data = {"signs": response.json()["signs"], "_id": id_}
+    data = {"signs": response.json()["signs"]}
 
     return data
 
@@ -30,7 +30,7 @@ class FragmentModel(DocumentModel):
     @classmethod
     def load(cls, id_: str, n_values=DEFAULT_N_VALUES) -> "FragmentModel":
         data = fetch_fragment(id_)
-        return cls(data["_id"], data["signs"], n_values)
+        return cls(id_, data["signs"], n_values)
 
     def _extract_ngrams(self):
         self.ngrams = (
