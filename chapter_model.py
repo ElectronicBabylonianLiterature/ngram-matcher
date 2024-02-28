@@ -1,4 +1,5 @@
 import pandas as pd
+import requests
 from document_model import (
     DEFAULT_N_VALUES,
     DocumentModel,
@@ -8,6 +9,8 @@ from document_model import (
     linewise_ngrams,
 )
 from ebl_enums import Provenance, Stage, ManuscriptType, Period
+
+CHAPTERS_API = "https://www.ebl.lmu.de/api/texts/"
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
 STAGES = {s.value: s.abbreviation for s in Stage}
@@ -74,16 +77,24 @@ def to_url(data: dict):
     )
 
 
-def url_to_query(url: str) -> dict:
+def make_api_url(url: str) -> dict:
     *_, genre, category, index, stage, name = url.split("/")
 
-    return {
-        "textId.genre": genre,
-        "textId.category": int(category),
-        "textId.index": int(index),
-        "stage": REVERSED_STAGES[stage],
-        "name": name,
-    }
+    return "{}{}/{}/{}/chapters/{}/{}/signs".format(
+        CHAPTERS_API,
+        genre,
+        category,
+        index,
+        stage,
+        name,
+    )
+
+
+def fetch(url: str):
+    response = requests.get(url)
+    response.raise_for_status()
+
+    return response.json()
 
 
 class TextId:
@@ -97,32 +108,28 @@ class ChapterModel(DocumentModel):
     _collection = "chapters"
 
     def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
-        super().__init__(data["_id"], data["signs"], n_values)
+        super().__init__(to_url(data), data["signs"], n_values)
 
         self.text_id = TextId(data["textId"])
         self.stage = data["stage"]
         self.name = data["name"]
         self._manuscripts = data["manuscripts"]
-        self.id_ = self.url = to_url(data)
         self._extract_ngrams()
 
     @classmethod
     def load(
         cls, url: str, n_values=DEFAULT_N_VALUES, db="ebldev", uri=None
     ) -> "ChapterModel":
-        data = fetch(
-            url_to_query(url),
-            projection={
-                "signs": 1,
-                "manuscripts": 1,
-                "textId": 1,
-                "stage": 1,
-                "name": 1,
-            },
-            collection=cls._collection,
-            db=db,
-            uri=uri,
+        *_, genre, category, index, stage, name = url.split("/")
+        fetch_url = "{}{}/{}/{}/chapters/{}/{}/signs".format(
+            CHAPTERS_API,
+            genre,
+            category,
+            index,
+            stage,
+            name,
         )
+        data = fetch(fetch_url)
 
         return cls(data, n_values)
 
