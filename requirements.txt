@@ -1,4 +1,2 @@
-pymongo
 pandas
-roman
-lark
+tqdm
