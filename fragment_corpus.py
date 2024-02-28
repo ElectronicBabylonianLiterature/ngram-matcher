@@ -1,4 +1,5 @@
 from typing import Sequence, TypedDict
+
 from base_corpus import BaseCorpus
 from document_model import DEFAULT_N_VALUES
 from fragment_model import FragmentModel
@@ -11,8 +12,7 @@ class FragmentRecord(TypedDict):
 
 class FragmentCorpus(BaseCorpus):
     _collection = "fragments"
-    _query = {"signs": {"$regex": "."}}
-    _projection = {"signs": 1}
+    _api_url = "fragments/all-signs"
 
     def __init__(
         self,

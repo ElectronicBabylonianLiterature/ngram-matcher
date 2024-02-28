@@ -1,4 +1,5 @@
 from typing import Sequence, TypedDict
+
 from base_corpus import BaseCorpus
 from chapter_model import ChapterModel
 from document_model import DEFAULT_N_VALUES
@@ -15,14 +16,7 @@ class ChapterRecord(TypedDict):
 
 class ChapterCorpus(BaseCorpus):
     _collection = "chapters"
-    _query = {"signs": {"$regex": "."}, "textId.category": {"$ne": 99}}
-    _projection = {
-        "signs": 1,
-        "manuscripts": 1,
-        "textId": 1,
-        "stage": 1,
-        "name": 1,
-    }
+    _api_url = "corpus/all-signs"
 
     def __init__(
         self,

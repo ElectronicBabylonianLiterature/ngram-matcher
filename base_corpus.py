@@ -9,12 +9,15 @@ import pandas as pd
 import numpy as np
 
 from pymongo import MongoClient
+import requests
 from tqdm import tqdm
 from chapter_model import ChapterModel
 
 from document_model import DEFAULT_N_VALUES, DocumentModel
 from fragment_model import FragmentModel
 from metrics import no_weight, weight_by_len
+
+API_URL = "http://localhost:8000/"
 
 
 def fetch_all(
@@ -92,24 +95,15 @@ class BaseCorpus:
     def load(
         cls,
         n_values=DEFAULT_N_VALUES,
-        db="ebldev",
-        uri=None,
         show_progress=True,
         threading=True,
         name="",
-        query={},
-        **kwargs,
     ):
-        data = fetch_all(
-            {**cls._query, **query},
-            projection=cls._projection,
-            collection=cls._collection,
-            db=db,
-            uri=uri,
-            **kwargs,
-        )
+        response = requests.get(f"{API_URL}{cls._api_url}")
+        response.raise_for_status()
+
         return cls(
-            list(data) if show_progress else data,
+            response.json(),
             n_values,
             show_progress,
             threading,
