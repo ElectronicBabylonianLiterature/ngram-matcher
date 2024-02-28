@@ -1,10 +1,8 @@
 import datetime
 import json
-import os
 import pickle
-from typing import Dict, Literal, Sequence
+from typing import Dict, Sequence
 
-from pymongo import MongoClient
 from util import overlap_coefficient
 import pandas as pd
 
@@ -49,25 +47,6 @@ def linewise_ngrams(signs: pd.Series, n_values: Sequence[int]) -> pd.Series:
 def postprocess(signs: pd.Series):
     signs = signs[~signs.map(set).map(lambda ngram: ngram <= {"X"})]
     return set(signs)
-
-
-def fetch(
-    query: dict,
-    projection: dict,
-    collection: Literal["chapters", "fragments"],
-    db="ebldev",
-    uri=None,
-):
-    client = MongoClient(uri or os.environ["MONGODB_URI"])
-    database = client.get_database(db)
-
-    if data := database.get_collection(collection).find_one(
-        query,
-        projection=projection,
-    ):
-        return data
-    else:
-        raise DocumentNotFoundError(f"No document found for {query!r}")
 
 
 class DocumentModel:

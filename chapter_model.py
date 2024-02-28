@@ -3,7 +3,6 @@ import requests
 from document_model import (
     DEFAULT_N_VALUES,
     DocumentModel,
-    fetch,
     preprocess,
     postprocess,
     linewise_ngrams,
