@@ -76,19 +76,6 @@ def to_url(data: dict):
     )
 
 
-def make_api_url(url: str) -> dict:
-    *_, genre, category, index, stage, name = url.split("/")
-
-    return "{}{}/{}/{}/chapters/{}/{}/signs".format(
-        CHAPTERS_API,
-        genre,
-        category,
-        index,
-        stage,
-        name,
-    )
-
-
 def fetch(url: str):
     response = requests.get(url)
     response.raise_for_status()
