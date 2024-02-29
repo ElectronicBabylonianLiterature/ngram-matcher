@@ -1,8 +1,8 @@
 from typing import Sequence, TypedDict
 
-from base_corpus import BaseCorpus
-from document_model import DEFAULT_N_VALUES
-from fragment_model import FragmentModel
+from ebl_ngrams.document_model import DEFAULT_N_VALUES
+from ebl_ngrams.base_corpus import BaseCorpus
+from ebl_ngrams.fragment_model import FragmentModel
 
 
 class FragmentRecord(TypedDict):

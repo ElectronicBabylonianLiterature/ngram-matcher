@@ -1,8 +1,8 @@
 from typing import Sequence, TypedDict
 
-from base_corpus import BaseCorpus
-from chapter_model import ChapterModel
-from document_model import DEFAULT_N_VALUES
+from ebl_ngrams.base_corpus import BaseCorpus
+from ebl_ngrams.chapter_model import ChapterModel
+from ebl_ngrams.document_model import DEFAULT_N_VALUES
 
 
 class ChapterRecord(TypedDict):

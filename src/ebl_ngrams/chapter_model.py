@@ -1,6 +1,6 @@
 import pandas as pd
 import requests
-from document_model import (
+from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
     DocumentModel,
@@ -8,7 +8,10 @@ from document_model import (
     postprocess,
     linewise_ngrams,
 )
-from ebl_enums import Provenance, Stage, ManuscriptType, Period
+from ebl_ngrams.enums.provenance import Provenance
+from ebl_ngrams.enums.stage import Stage
+from ebl_ngrams.enums.manuscript_type import ManuscriptType
+from ebl_ngrams.enums.period import Period
 
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
@@ -69,7 +72,7 @@ def to_url(data: dict):
                 text_id["genre"],
                 int(text_id["category"]),
                 int(text_id["index"]),
-                STAGES[data["stage"]],
+                Stage.from_name(data["stage"]),
                 data["name"].strip(),
             ],
         )

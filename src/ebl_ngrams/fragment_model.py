@@ -1,5 +1,5 @@
 import requests
-from document_model import (
+from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
     DocumentModel,

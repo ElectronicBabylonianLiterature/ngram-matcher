@@ -2,15 +2,18 @@ import datetime
 import json
 import pickle
 from typing import Dict, Sequence
-
-from util import overlap_coefficient
 import pandas as pd
-
 
 UNKNOWN_SIGN = "X"
 LINE_SEP = "#"
 DEFAULT_N_VALUES = (1, 2, 3)
 API_URL = "https://www.ebl.lmu.de/api/"
+
+
+def overlap_coefficient(A: set, B: set) -> float:
+    len_A, len_B = len(A), len(B)
+
+    return (len(A & B) / min(len(A), len(B))) if len_A and len_B else 0.0
 
 
 def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):

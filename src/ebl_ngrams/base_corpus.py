@@ -8,11 +8,11 @@ import numpy as np
 
 import requests
 from tqdm import tqdm
-from chapter_model import ChapterModel
+from ebl_ngrams.chapter_model import ChapterModel
 
-from document_model import API_URL, DEFAULT_N_VALUES, DocumentModel
-from fragment_model import FragmentModel
-from metrics import no_weight, weight_by_len
+from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, DocumentModel
+from ebl_ngrams.fragment_model import FragmentModel
+from ebl_ngrams.metrics import no_weight, weight_by_len
 
 
 class BaseCorpus:
