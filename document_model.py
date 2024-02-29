@@ -13,10 +13,6 @@ DEFAULT_N_VALUES = (1, 2, 3)
 API_URL = "https://www.ebl.lmu.de/api/"
 
 
-class DocumentNotFoundError(Exception):
-    pass
-
-
 def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):
     subframes = [
         pd.concat([signs.shift(-i) for i in range(n)], axis=1)
