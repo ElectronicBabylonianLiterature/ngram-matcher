@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 from document_model import (
+    API_URL,
     DEFAULT_N_VALUES,
     DocumentModel,
     preprocess,
@@ -9,7 +10,6 @@ from document_model import (
 )
 from ebl_enums import Provenance, Stage, ManuscriptType, Period
 
-CHAPTERS_API = "https://www.ebl.lmu.de/api/texts/"
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
 STAGES = {s.value: s.abbreviation for s in Stage}
@@ -108,7 +108,7 @@ class ChapterModel(DocumentModel):
     ) -> "ChapterModel":
         *_, genre, category, index, stage, name = url.split("/")
         fetch_url = "{}{}/{}/{}/chapters/{}/{}/signs".format(
-            CHAPTERS_API,
+            f"{API_URL}/texts/",
             genre,
             category,
             index,

@@ -10,6 +10,7 @@ import pandas as pd
 UNKNOWN_SIGN = "X"
 LINE_SEP = "#"
 DEFAULT_N_VALUES = (1, 2, 3)
+API_URL = "https://www.ebl.lmu.de/api/"
 
 
 class DocumentNotFoundError(Exception):

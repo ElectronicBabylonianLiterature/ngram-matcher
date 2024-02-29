@@ -10,11 +10,9 @@ import requests
 from tqdm import tqdm
 from chapter_model import ChapterModel
 
-from document_model import DEFAULT_N_VALUES, DocumentModel
+from document_model import API_URL, DEFAULT_N_VALUES, DocumentModel
 from fragment_model import FragmentModel
 from metrics import no_weight, weight_by_len
-
-API_URL = "http://localhost:8000/"
 
 
 class BaseCorpus:

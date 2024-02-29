@@ -1,5 +1,6 @@
 import requests
 from document_model import (
+    API_URL,
     DEFAULT_N_VALUES,
     DocumentModel,
     preprocess,
@@ -7,11 +8,9 @@ from document_model import (
     linewise_ngrams,
 )
 
-FRAGMENTS_API = "https://www.ebl.lmu.de/api/fragments/"
-
 
 def fetch_fragment(id_: str):
-    response = requests.get(f"{FRAGMENTS_API}{id_}")
+    response = requests.get(f"{API_URL}fragments/{id_}")
     response.raise_for_status()
 
     data = {"signs": response.json()["signs"]}
