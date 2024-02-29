@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ebl-ngram-matcher"
+version = "0.1.0"
+description = "A toolset to extract and match n-gram models from the electronic Babylonian Library database"
+authors = [
+    {name = "Fabian Simonjetz"}
+]
+requires-python = ">= 3.8"
+dependencies = [
+  "pandas",
+  "tqdm",
+
+]
