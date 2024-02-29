@@ -6,7 +6,6 @@ from document_model import DEFAULT_N_VALUES
 
 
 class ChapterRecord(TypedDict):
-    _id: str
     signs: list
     manuscripts: list
     textId: dict
