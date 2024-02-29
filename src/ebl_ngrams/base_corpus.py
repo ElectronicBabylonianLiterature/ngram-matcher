@@ -3,6 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial, singledispatchmethod
 import pickle
 import datetime
+from typing import Callable, Sequence
 import pandas as pd
 import numpy as np
 
@@ -16,13 +17,14 @@ from ebl_ngrams.metrics import no_weight, weight_by_len
 
 
 class BaseCorpus:
-    _collection = ""
+    _collection = None
 
     def __init__(self, data, n_values, show_progress=False, name=""):
         self.n_values = n_values
         self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()
         self.name = name
+        self.data = data
         self._tqdm_config = {
             "total": len(data) if show_progress else 0,
             "desc": "Building model",
@@ -73,16 +75,17 @@ class BaseCorpus:
     @classmethod
     def load(
         cls,
-        n_values=DEFAULT_N_VALUES,
+        n_values: Sequence[int] = DEFAULT_N_VALUES,
         show_progress=True,
         threading=True,
         name="",
+        transform: Callable[[Sequence[dict]], Sequence[dict]] = None,
     ):
         response = requests.get(f"{API_URL}{cls._api_url}")
         response.raise_for_status()
 
         return cls(
-            response.json(),
+            response.json() if transform is None else transform(response.json()),
             n_values,
             show_progress,
             threading,
