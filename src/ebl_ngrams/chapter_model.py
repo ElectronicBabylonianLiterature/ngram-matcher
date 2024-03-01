@@ -15,8 +15,6 @@ from ebl_ngrams.enums.period import Period
 
 
 PROVENANCES = {p.long_name: p.abbreviation for p in Provenance}
-STAGES = {s.value: s.abbreviation for s in Stage}
-REVERSED_STAGES = {v: k for k, v in STAGES.items()}
 MANUSCRIPT_TYPES = {m.long_name: m.abbreviation for m in ManuscriptType}
 PERIODS = {p.long_name: p.abbreviation for p in Period}
 
@@ -72,7 +70,7 @@ def to_url(data: dict):
                 text_id["genre"],
                 int(text_id["category"]),
                 int(text_id["index"]),
-                Stage.from_name(data["stage"]),
+                Stage.from_name(data["stage"]).abbreviation,
                 data["name"].strip(),
             ],
         )
@@ -100,7 +98,7 @@ class ChapterModel(DocumentModel):
         super().__init__(to_url(data), data["signs"], n_values)
 
         self.text_id = TextId(data["textId"])
-        self.stage = data["stage"]
+        self.stage = Stage.from_name(data["stage"])
         self.name = data["name"]
         self._manuscripts = data["manuscripts"]
         self._extract_ngrams()
