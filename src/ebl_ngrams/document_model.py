@@ -46,7 +46,7 @@ def postprocess(signs: pd.Series):
     return set(signs)
 
 
-class DocumentModel(ABC):
+class BaseDocument(ABC):
 
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
         self.id_ = self.url = id_
@@ -55,7 +55,7 @@ class DocumentModel(ABC):
         self.retrieved_on = datetime.datetime.now()
 
     @classmethod
-    def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "DocumentModel":
+    def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "BaseDocument":
         with open(path) as jf:
             data = json.load(jf)
         return cls(data, n_values)
@@ -94,9 +94,9 @@ class DocumentModel(ABC):
         return {sign for ngram in self.ngrams for sign in ngram}
 
 
-@DocumentModel.match.register
+@BaseDocument.match.register
 def match(
-    self: DocumentModel, other: DocumentModel, *n_values, length_weighting=False
+    self: BaseDocument, other: BaseDocument, *n_values, length_weighting=False
 ) -> float:
     intersection = self.intersection(other, *n_values)
     weighted_sum = weight_by_len if length_weighting else no_weight

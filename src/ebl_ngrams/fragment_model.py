@@ -2,7 +2,7 @@ import requests
 from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
-    DocumentModel,
+    BaseDocument,
     preprocess,
     postprocess,
     linewise_ngrams,
@@ -18,7 +18,7 @@ def fetch_fragment(id_: str):
     return data
 
 
-class FragmentModel(DocumentModel):
+class FragmentModel(BaseDocument):
     _collection = "fragments"
 
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):

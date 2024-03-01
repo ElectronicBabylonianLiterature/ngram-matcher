@@ -3,7 +3,7 @@ import requests
 from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
-    DocumentModel,
+    BaseDocument,
     preprocess,
     postprocess,
     linewise_ngrams,
@@ -91,7 +91,7 @@ class TextId:
         self.index = int(data["index"])
 
 
-class ChapterModel(DocumentModel):
+class ChapterModel(BaseDocument):
     _collection = "chapters"
 
     def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
