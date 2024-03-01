@@ -59,31 +59,6 @@ def drop_colophon_lines(frame):
     return frame.loc[frame.line_type != "ColophonLine", "signs"]
 
 
-def to_url(data: dict):
-    text_id = data["textId"]
-
-    return "/".join(
-        map(
-            str,
-            [
-                "",
-                text_id["genre"],
-                int(text_id["category"]),
-                int(text_id["index"]),
-                Stage.from_name(data["stage"]).abbreviation,
-                data["name"].strip(),
-            ],
-        )
-    )
-
-
-def fetch(url: str):
-    response = requests.get(url)
-    response.raise_for_status()
-
-    return response.json()
-
-
 class TextId:
     genre: str
     category: int
@@ -105,11 +80,12 @@ class ChapterModel(BaseDocument):
     _collection = "chapters"
 
     def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
-        super().__init__(to_url(data), data["signs"], n_values)
-
         self.text_id = TextId(data["textId"])
         self.stage = Stage.from_name(data["stage"])
-        self.name = data["name"]
+        self.name = data["name"].strip()
+
+        super().__init__(self._create_id(data), data["signs"], n_values)
+
         self._manuscripts = data["manuscripts"]
         self._extract_ngrams()
 
@@ -117,18 +93,32 @@ class ChapterModel(BaseDocument):
     def load(
         cls, url: str, n_values=DEFAULT_N_VALUES, db="ebldev", uri=None
     ) -> "ChapterModel":
-        *_, genre, category, index, stage, name = url.split("/")
-        fetch_url = "{}{}/{}/{}/chapters/{}/{}/signs".format(
-            f"{API_URL}/texts/",
-            genre,
-            category,
-            index,
-            stage,
-            name,
-        )
-        data = fetch(fetch_url)
 
-        return cls(data, n_values)
+        response = requests.get(cls._create_api_url(url))
+        response.raise_for_status()
+
+        return cls(response.json(), n_values)
+
+    @staticmethod
+    def _create_api_url(url: str) -> str:
+        return "{}{}/{}/{}/chapters/{}/{}/signs".format(
+            f"{API_URL}/texts/", *url.split("/")[-5:]
+        )
+
+    def _create_id(self, data: dict) -> str:
+        return "/".join(
+            map(
+                str,
+                [
+                    "",
+                    self.genre,
+                    self.category,
+                    self.index,
+                    self.stage.abbreviation,
+                    self.name,
+                ],
+            )
+        )
 
     def _extract_ngrams(self):
         frame = (
