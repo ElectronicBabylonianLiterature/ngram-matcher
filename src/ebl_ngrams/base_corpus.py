@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from operator import attrgetter, contains
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, singledispatchmethod
-import pickle
 import datetime
 from typing import Callable, Sequence
 import pandas as pd
@@ -21,38 +20,17 @@ class BaseCorpus(ABC):
 
     def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
         self.n_values = n_values
-        self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()
         self.name = name
         self.data = data
         self._tqdm_config = {
             "total": len(data) if show_progress else 0,
-            "desc": "Building model",
+            "desc": f"Building {self._collection} model",
             "disable": not show_progress,
         }
         self.idf_table = None
         self._ngrams = None
         self._tf_idf_n_values = n_values
-
-    def _compress(self):
-        if not self.is_compressed:
-            encoder = {word: index for index, word in enumerate(self._vocab)}
-            for document in self:
-                document._compress(encoder)
-            self.is_compressed = True
-
-    def _decompress(self):
-        if self.is_compressed:
-            decoder = dict(enumerate(self._vocab))
-            for document in self:
-                document._decompress(decoder)
-            self.is_compressed = False
-
-    def save(self, path: str):
-        self._compress()
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-        self._decompress()
 
     @abstractmethod
     def _create_model(self, entry): ...
@@ -66,18 +44,6 @@ class BaseCorpus(ABC):
         return self.documents.map(
             lambda document: document.get_ngrams(*(n_values or self.n_values))
         )
-
-    @classmethod
-    def open(cls, path: str):
-        with open(path, "rb") as f:
-            model = pickle.load(f)
-
-        if not isinstance(model, cls):
-            raise TypeError(f"{cls.__name__} cannot load {type(model).__name__} data")
-
-        model._decompress()
-
-        return model
 
     def to_series(self, data: list) -> pd.Series:
         return pd.Series(data, index=[item.id_ for item in data], name=self._collection)
@@ -137,9 +103,6 @@ class BaseCorpus(ABC):
 
     def __repr__(self):
         return str(self)
-
-    def __and__(self, other):
-        return self.intersection(other)
 
     @property
     def ngrams(self):

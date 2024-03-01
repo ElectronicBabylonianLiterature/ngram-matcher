@@ -2,7 +2,6 @@ from abc import ABC
 import datetime
 from functools import singledispatchmethod
 import json
-import pickle
 from typing import Dict, Sequence, Set
 import pandas as pd
 
@@ -54,7 +53,6 @@ class DocumentModel(ABC):
         self.signs = signs
         self.n_values = n_values
         self.retrieved_on = datetime.datetime.now()
-        self.is_compressed = False
 
     @classmethod
     def load_json(cls, path: str, n_values=DEFAULT_N_VALUES) -> "DocumentModel":
@@ -94,40 +92,6 @@ class DocumentModel(ABC):
     @property
     def _vocab(self) -> Set[str]:
         return {sign for ngram in self.ngrams for sign in ngram}
-
-    def _compress(self, encoder: Dict[str, int]):
-        if not self.is_compressed:
-
-            def encode_ngram(ngram):
-                return tuple(encoder[sign] for sign in ngram)
-
-            self.ngrams = set(map(encode_ngram, self.ngrams))
-            self.is_compressed = True
-
-    def _decompress(self, decoder: Dict[int, str]):
-        if self.is_compressed:
-
-            def decode_ngram(ngram):
-                return tuple(decoder[id_] for id_ in ngram)
-
-            self.ngrams = set(map(decode_ngram, self.ngrams))
-            self.is_compressed = False
-
-    def save(self, path: str):
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-
-    @classmethod
-    def open(cls, path: str):
-        with open(path, "rb") as f:
-            model = pickle.load(f)
-
-        if not isinstance(model, cls):
-            raise TypeError(
-                f"{cls.__name__} cannot load {model.__class__.__name__} data"
-            )
-
-        return model
 
 
 @DocumentModel.match.register
