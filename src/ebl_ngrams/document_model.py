@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 import datetime
 from functools import singledispatchmethod
 import json
@@ -66,9 +66,8 @@ class BaseDocument(ABC):
             data = json.load(jf)
         return cls(data, n_values)
 
-    def intersection(self, other, *n_values) -> set:
-        A = self.get_ngrams(*n_values)
-        B = other.get_ngrams(*n_values)
+    @abstractmethod
+    def set_ngrams(self, *n_values) -> "BaseDocument": ...
 
     @singledispatchmethod
     def intersection(self, other):
