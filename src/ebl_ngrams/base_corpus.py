@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from operator import attrgetter, contains
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, singledispatchmethod
@@ -9,15 +10,14 @@ import numpy as np
 
 import requests
 from tqdm import tqdm
-from ebl_ngrams.chapter_model import ChapterModel
 
 from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, DocumentModel
-from ebl_ngrams.fragment_model import FragmentModel
 from ebl_ngrams.metrics import no_weight, weight_by_len
 
 
-class BaseCorpus:
+class BaseCorpus(ABC):
     _collection = None
+    documents: pd.Series
 
     def __init__(self, data, n_values, show_progress=False, name=""):
         self.n_values = n_values
@@ -53,9 +53,15 @@ class BaseCorpus:
             pickle.dump(self, f)
         self._decompress()
 
+    @abstractmethod
+    def _create_model(self, entry): ...
+
     @property
-    def ngrams_by_document(self):
+    def ngrams_by_document(self) -> pd.Series:
         return self.documents.map(attrgetter("ngrams"))
+
+    def get_ngrams_by_document(self, *n_values) -> pd.Series:
+        return self.documents.map(lambda document: document.get_ngrams(*n_values))
 
     @classmethod
     def open(cls, path: str):
@@ -142,14 +148,15 @@ class BaseCorpus:
     @singledispatchmethod
     def intersection(self, other):
         raise NotImplementedError(
-            f"Cannot intersect {type(self).__name__} " f"with {type(other).__name__}"
+            f"Cannot intersect {type(self).__name__} with {type(other).__name__}"
         )
 
-    @intersection.register(FragmentModel)
-    @intersection.register(ChapterModel)
-    def _(self, other: DocumentModel) -> pd.Series:
+    @intersection.register(DocumentModel)
+    def _(self, other: DocumentModel, *n_values) -> pd.Series:
         return pd.Series(
-            np.vectorize(set.intersection)(other.ngrams, self.ngrams_by_document),
+            np.vectorize(set.intersection)(
+                other.get_ngrams(*n_values), self.get_ngrams_by_document(*n_values)
+            ),
             index=self.documents.index,
             name=other.id_,
         )
@@ -157,18 +164,17 @@ class BaseCorpus:
     @singledispatchmethod
     def match(self, other):
         raise NotImplementedError(
-            f"Cannot match {type(self).__name__} " f"with {type(other).__name__}"
+            f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
 
-    @match.register(FragmentModel)
-    @match.register(ChapterModel)
-    def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
-        intersection = self.intersection(other)
+    @match.register(DocumentModel)
+    def _(self, other: DocumentModel, *n_values, length_weighting=False) -> pd.Series:
+        intersection = self.intersection(other, *n_values)
         weighted_sum = weight_by_len if length_weighting else no_weight
 
         intersection_sizes = weighted_sum(intersection)
-        self_sizes = weighted_sum(self.ngrams_by_document)
-        other_size = weighted_sum(other.ngrams)
+        self_sizes = weighted_sum(self.get_ngrams_by_document(*n_values))
+        other_size = weighted_sum(other.get_ngrams(*n_values))
 
         result = intersection_sizes / np.minimum(self_sizes, other_size)
         result = result.rename(other.id_)
@@ -202,11 +208,10 @@ class BaseCorpus:
     @singledispatchmethod
     def match_tf_idf(self, other):
         raise NotImplementedError(
-            f"Cannot match {type(self).__name__} " f"with {type(other).__name__}"
+            f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
 
-    @match_tf_idf.register(FragmentModel)
-    @match_tf_idf.register(ChapterModel)
+    @match_tf_idf.register(DocumentModel)
     def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
         self._init_idf()
         weight_func = (
