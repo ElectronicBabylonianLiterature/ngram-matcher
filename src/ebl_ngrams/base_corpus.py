@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, BaseDocument
 from ebl_ngrams.metrics import no_weight, weight_by_len
+from copy import deepcopy
 
 
 class BaseCorpus(ABC):
@@ -203,6 +204,13 @@ class BaseCorpus(ABC):
             .map(weight_func)
             .sort_values(ascending=False)
         )
+
+    def filter(self, condition: Callable[[BaseDocument], bool]) -> "BaseCorpus":
+        corpus = deepcopy(self)
+        corpus._n_grams = None
+        corpus.documents = corpus.documents[corpus.documents.map(condition)]
+
+        return corpus
 
 
 @BaseCorpus.intersection.register
