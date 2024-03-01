@@ -6,6 +6,7 @@ from ebl_ngrams.document_model import (
     preprocess,
     postprocess,
     linewise_ngrams,
+    validate_n_values,
 )
 
 
@@ -24,14 +25,16 @@ class FragmentModel(BaseDocument):
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
         super().__init__(id_, signs, n_values)
 
-        self._extract_ngrams()
+        self.set_ngrams(*n_values)
 
     @classmethod
     def load(cls, id_: str, n_values=DEFAULT_N_VALUES) -> "FragmentModel":
         data = fetch_fragment(id_)
         return cls(id_, data["signs"], n_values)
 
-    def _extract_ngrams(self):
+    def set_ngrams(self, *n_values) -> "FragmentModel":
+        validate_n_values(n_values)
+        self.n_values = n_values
         self.ngrams = (
             preprocess(self.signs)
             .pipe(linewise_ngrams, n_values=self.n_values)

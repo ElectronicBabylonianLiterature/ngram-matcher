@@ -10,7 +10,12 @@ import numpy as np
 import requests
 from tqdm import tqdm
 
-from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, BaseDocument
+from ebl_ngrams.document_model import (
+    API_URL,
+    DEFAULT_N_VALUES,
+    BaseDocument,
+    validate_n_values,
+)
 from ebl_ngrams.metrics import no_weight, weight_by_len
 from copy import deepcopy
 
@@ -29,7 +34,7 @@ class BaseCorpus(ABC):
             "desc": f"Building {self._collection} model",
             "disable": not show_progress,
         }
-        self.idf_table = None
+        self._idf_table = None
         self._ngrams = None
         self._tf_idf_n_values = n_values
 
@@ -106,7 +111,7 @@ class BaseCorpus(ABC):
         return str(self)
 
     @property
-    def ngrams(self):
+    def ngrams(self) -> set:
         if self._ngrams is None:
             self._ngrams = {
                 ngram for document in self.documents for ngram in document.get_ngrams()
@@ -114,9 +119,20 @@ class BaseCorpus(ABC):
         return self._ngrams
 
     def get_ngrams(self, *n_values) -> set:
-        return {
-            ngram for ngram in self.ngrams if len(ngram) in (n_values or self.n_values)
-        }
+        n_values = n_values or self.n_values
+        return (
+            {ngram for ngram in self.ngrams if len(ngram) in n_values}
+            if n_values
+            else self.ngrams
+        )
+
+    def rebuild_ngrams(self, *n_values) -> "BaseCorpus":
+        validate_n_values(n_values)
+        corpus = deepcopy(self)
+        corpus._reset_ngrams()
+        corpus.documents = corpus.documents.map(lambda doc: doc.set_ngrams(*n_values))
+
+        return corpus
 
     @singledispatchmethod
     def intersection(self, other):
@@ -159,7 +175,7 @@ class BaseCorpus(ABC):
     def _init_idf(self, *n_values: Sequence[int]) -> None:
         n_values = n_values or self.n_values
         skip_init = (
-            set(n_values) == set(self._tf_idf_n_values) and self.idf_table is not None
+            set(n_values) == set(self._tf_idf_n_values) and self._idf_table is not None
         )
 
         if skip_init:
@@ -179,13 +195,17 @@ class BaseCorpus(ABC):
         docs_with_ngram = df.sum(axis=1) + 1
 
         idf = np.log(N / docs_with_ngram) + 1
-        self.idf_table = idf.to_dict()
+        self._idf_table = idf.to_dict()
 
     def _weight_tf_idf(self, ngrams: set):
-        return sum(self.idf_table.get(term, 0) for term in ngrams)
+        return sum(self._idf_table.get(term, 0) for term in ngrams)
 
     def _weight_tf_idf_length(self, ngrams: set):
-        return sum(self.idf_table.get(term, 0) * len(term) ** 2 for term in ngrams)
+        return sum(self._idf_table.get(term, 0) * len(term) ** 2 for term in ngrams)
+
+    def _reset_ngrams(self):
+        self._ngrams = None
+        self._idf_table = None
 
     @singledispatchmethod
     def match_tf_idf(self, other):
@@ -207,8 +227,8 @@ class BaseCorpus(ABC):
 
     def filter(self, condition: Callable[[BaseDocument], bool]) -> "BaseCorpus":
         corpus = deepcopy(self)
-        corpus._n_grams = None
-        corpus.documents = corpus.documents[corpus.documents.map(condition)]
+        corpus._reset_ngrams()
+        corpus.documents = corpus.documents.loc[corpus.documents.map(condition)]
 
         return corpus
 

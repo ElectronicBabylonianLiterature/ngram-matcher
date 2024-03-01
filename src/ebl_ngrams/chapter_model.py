@@ -7,6 +7,7 @@ from ebl_ngrams.document_model import (
     preprocess,
     postprocess,
     linewise_ngrams,
+    validate_n_values,
 )
 from ebl_ngrams.enums.provenance import Provenance
 from ebl_ngrams.enums.stage import Stage
@@ -87,7 +88,7 @@ class ChapterModel(BaseDocument):
         super().__init__(self._create_id(data), data["signs"], n_values)
 
         self._manuscripts = data["manuscripts"]
-        self._extract_ngrams()
+        self.set_ngrams(*n_values)
 
     @classmethod
     def load(
@@ -120,15 +121,17 @@ class ChapterModel(BaseDocument):
             )
         )
 
-    def _extract_ngrams(self):
-        frame = (
+    def set_ngrams(self, *n_values) -> "ChapterModel":
+        validate_n_values(n_values)
+        self.n_values = n_values
+        df = (
             pd.DataFrame({"manuscript": self._manuscripts, "signs": self.signs})
             .pipe(set_sigla)
             .pipe(drop_colophon_lines)
         )
 
         self.ngrams_by_manuscript = (
-            frame.groupby(level=0)
+            df.groupby(level=0)
             .agg("\n".join)
             .map(
                 lambda signs: postprocess(
@@ -143,6 +146,7 @@ class ChapterModel(BaseDocument):
             if (ngrams := self.ngrams_by_manuscript)
             else set()
         )
+        return self
 
     def get_manuscript_ngrams(self, siglum: str, *n_values):
         return (
