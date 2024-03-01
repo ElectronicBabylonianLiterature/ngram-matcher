@@ -64,7 +64,11 @@ class BaseDocument(ABC):
         A = self.get_ngrams(*n_values)
         B = other.get_ngrams(*n_values)
 
-        return A & B
+    @singledispatchmethod
+    def intersection(self, other):
+        raise NotImplementedError(
+            f"Cannot intersect {type(self).__name__} with {type(other).__name__}"
+        )
 
     @singledispatchmethod
     def match(self, other):
@@ -92,6 +96,14 @@ class BaseDocument(ABC):
     @property
     def _vocab(self) -> Set[str]:
         return {sign for ngram in self.ngrams for sign in ngram}
+
+
+@BaseDocument.intersection.register
+def _(self: BaseDocument, other: BaseDocument, *n_values) -> set:
+    A = self.get_ngrams(*n_values)
+    B = other.get_ngrams(*n_values)
+
+    return A & B
 
 
 @BaseDocument.match.register
