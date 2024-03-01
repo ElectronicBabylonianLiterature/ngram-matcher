@@ -10,12 +10,12 @@ import numpy as np
 import requests
 from tqdm import tqdm
 
-from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, DocumentModel
+from ebl_ngrams.document_model import API_URL, DEFAULT_N_VALUES, BaseDocument
 from ebl_ngrams.metrics import no_weight, weight_by_len
 
 
 class BaseCorpus(ABC):
-    _collection = None
+    _collection: str
     documents: pd.Series
 
     def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
@@ -45,7 +45,7 @@ class BaseCorpus(ABC):
             lambda document: document.get_ngrams(*(n_values or self.n_values))
         )
 
-    def to_series(self, data: list) -> pd.Series:
+    def _to_series(self, data: list) -> pd.Series:
         return pd.Series(data, index=[item.id_ for item in data], name=self._collection)
 
     @classmethod
@@ -69,7 +69,7 @@ class BaseCorpus(ABC):
         )
 
     def _load(self, data: dict) -> pd.Series:
-        return self.to_series(
+        return self._to_series(
             [
                 self._create_model(entry, self.n_values)
                 for entry in tqdm(data, **self._tqdm_config)
@@ -87,7 +87,7 @@ class BaseCorpus(ABC):
                 )
             )
 
-        return self.to_series(result)
+        return self._to_series(result)
 
     def __len__(self):
         return len(self.documents)
@@ -123,8 +123,8 @@ class BaseCorpus(ABC):
             f"Cannot intersect {type(self).__name__} with {type(other).__name__}"
         )
 
-    @intersection.register(DocumentModel)
-    def _(self, other: DocumentModel, *n_values) -> pd.Series:
+    @intersection.register(BaseDocument)
+    def _(self, other: BaseDocument, *n_values) -> pd.Series:
         n_values = n_values or self.n_values
         return pd.Series(
             np.vectorize(set.intersection)(
@@ -140,8 +140,8 @@ class BaseCorpus(ABC):
             f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
 
-    @match.register(DocumentModel)
-    def _(self, other: DocumentModel, *n_values, length_weighting=False) -> pd.Series:
+    @match.register(BaseDocument)
+    def _(self, other: BaseDocument, *n_values, length_weighting=False) -> pd.Series:
         n_values = n_values or self.n_values
         intersection = self.intersection(other, *n_values)
         weighted_sum = weight_by_len if length_weighting else no_weight
@@ -192,8 +192,8 @@ class BaseCorpus(ABC):
             f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
 
-    @match_tf_idf.register(DocumentModel)
-    def _(self, other: DocumentModel, *n_values, length_weighting=False) -> pd.Series:
+    @match_tf_idf.register(BaseDocument)
+    def _(self, other: BaseDocument, *n_values, length_weighting=False) -> pd.Series:
         self._init_idf(*n_values)
         weight_func = (
             self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
