@@ -85,10 +85,20 @@ def fetch(url: str):
 
 
 class TextId:
+    genre: str
+    category: int
+    index: int
+
     def __init__(self, data: dict):
         self.genre = data["genre"]
         self.category = int(data["category"])
         self.index = int(data["index"])
+
+    def __str__(self):
+        return f"{self.genre}/{self.category}/{self.index}"
+
+    def __repr__(self):
+        return repr(str(self))
 
 
 class ChapterModel(BaseDocument):
@@ -154,3 +164,15 @@ class ChapterModel(BaseDocument):
             if n_values
             else self.ngrams_by_manuscript[siglum]
         )
+
+    @property
+    def genre(self) -> str:
+        return self.text_id.genre
+
+    @property
+    def category(self) -> int:
+        return self.text_id.category
+
+    @property
+    def index(self) -> int:
+        return self.text_id.index
