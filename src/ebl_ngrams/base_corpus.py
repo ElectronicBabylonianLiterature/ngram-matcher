@@ -19,7 +19,7 @@ class BaseCorpus(ABC):
     _collection = None
     documents: pd.Series
 
-    def __init__(self, data, n_values, show_progress=False, name=""):
+    def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
         self.n_values = n_values
         self.is_compressed = False
         self.retrieved_on = datetime.datetime.now()
@@ -32,6 +32,7 @@ class BaseCorpus(ABC):
         }
         self.idf_table = None
         self._ngrams = None
+        self._tf_idf_n_values = n_values
 
     def _compress(self):
         if not self.is_compressed:
@@ -61,7 +62,10 @@ class BaseCorpus(ABC):
         return self.documents.map(attrgetter("ngrams"))
 
     def get_ngrams_by_document(self, *n_values) -> pd.Series:
-        return self.documents.map(lambda document: document.get_ngrams(*n_values))
+        n_values = n_values or self.n_values
+        return self.documents.map(
+            lambda document: document.get_ngrams(*(n_values or self.n_values))
+        )
 
     @classmethod
     def open(cls, path: str):
@@ -145,6 +149,11 @@ class BaseCorpus(ABC):
             }
         return self._ngrams
 
+    def get_ngrams(self, *n_values) -> set:
+        return {
+            ngram for ngram in self.ngrams if len(ngram) in (n_values or self.n_values)
+        }
+
     @singledispatchmethod
     def intersection(self, other):
         raise NotImplementedError(
@@ -153,6 +162,7 @@ class BaseCorpus(ABC):
 
     @intersection.register(DocumentModel)
     def _(self, other: DocumentModel, *n_values) -> pd.Series:
+        n_values = n_values or self.n_values
         return pd.Series(
             np.vectorize(set.intersection)(
                 other.get_ngrams(*n_values), self.get_ngrams_by_document(*n_values)
@@ -169,6 +179,7 @@ class BaseCorpus(ABC):
 
     @match.register(DocumentModel)
     def _(self, other: DocumentModel, *n_values, length_weighting=False) -> pd.Series:
+        n_values = n_values or self.n_values
         intersection = self.intersection(other, *n_values)
         weighted_sum = weight_by_len if length_weighting else no_weight
 
@@ -181,15 +192,22 @@ class BaseCorpus(ABC):
 
         return result.sort_values(ascending=False)
 
-    def _init_idf(self) -> None:
-        if self.idf_table is not None:
+    def _init_idf(self, *n_values: Sequence[int]) -> None:
+        n_values = n_values or self.n_values
+        skip_init = (
+            set(n_values) == set(self._tf_idf_n_values) and self.idf_table is not None
+        )
+
+        if skip_init:
             return
 
-        unique_ngrams = pd.Series(list(self.ngrams))
+        self._tf_idf_n_values = n_values
+
+        unique_ngrams = pd.Series(list(self.get_ngrams(*n_values)))
 
         df = pd.DataFrame(
             np.vectorize(contains)(
-                self.ngrams_by_document, unique_ngrams.values[:, None]
+                self.get_ngrams_by_document(*n_values), unique_ngrams.values[:, None]
             ),
             index=unique_ngrams,
         )
@@ -212,19 +230,24 @@ class BaseCorpus(ABC):
         )
 
     @match_tf_idf.register(DocumentModel)
-    def _(self, other: DocumentModel, length_weighting=False) -> pd.Series:
-        self._init_idf()
+    def _(self, other: DocumentModel, *n_values, length_weighting=False) -> pd.Series:
+        self._init_idf(*n_values)
         weight_func = (
             self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
         )
-        return self.intersection(other).map(weight_func).sort_values(ascending=False)
+        return (
+            self.intersection(other, *n_values)
+            .map(weight_func)
+            .sort_values(ascending=False)
+        )
 
 
 @BaseCorpus.intersection.register
-def _(self, other: BaseCorpus):
+def _(self: BaseCorpus, other: BaseCorpus, *n_values):
     return pd.DataFrame(
         np.vectorize(set.intersection)(
-            self.ngrams_by_document.values[:, None], other.ngrams_by_document
+            self.get_ngrams_by_document(*n_values).values[:, None],
+            other.ngrams_by_document,
         ),
         index=self.documents.index,
         columns=other.documents.index,
@@ -232,12 +255,15 @@ def _(self, other: BaseCorpus):
 
 
 @BaseCorpus.match.register
-def _(self, other: BaseCorpus, length_weighting=False) -> pd.DataFrame:
+def _(
+    self: BaseCorpus, other: BaseCorpus, *n_values, length_weighting=False
+) -> pd.DataFrame:
+    n_values = n_values or self.n_values
     weighted_sum = weight_by_len if length_weighting else no_weight
 
-    intersection_sizes = weighted_sum(self.intersection(other))
-    self_sizes = weighted_sum(self.ngrams_by_document)
-    other_sizes = weighted_sum(other.ngrams_by_document)
+    intersection_sizes = weighted_sum(self.intersection(other, *n_values))
+    self_sizes = weighted_sum(self.get_ngrams_by_document(*n_values))
+    other_sizes = weighted_sum(other.get_ngrams_by_document(*n_values))
 
     return intersection_sizes / np.minimum(
         self_sizes.values[:, None],
@@ -246,8 +272,8 @@ def _(self, other: BaseCorpus, length_weighting=False) -> pd.DataFrame:
 
 
 @BaseCorpus.match_tf_idf.register
-def _(self, other: BaseCorpus, length_weighting=False) -> pd.DataFrame:
-    self._init_idf()
+def _(self, other: BaseCorpus, *n_values, length_weighting=False) -> pd.DataFrame:
+    self._init_idf(*n_values)
     weight_func = (
         self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
     )
