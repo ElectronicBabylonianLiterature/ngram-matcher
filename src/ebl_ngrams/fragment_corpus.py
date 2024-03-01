@@ -26,11 +26,15 @@ class FragmentCorpus(BaseCorpus):
         super().__init__(data, n_values, show_progress, name)
 
         load = self._load_threading if threading else self._load
-        self.documents = self.fragments = load(data)
+        self.documents = load(data)
 
         self._vocab = {
             sign for fragment in self for ngram in fragment.ngrams for sign in ngram
         }
+
+    @property
+    def fragments(self):
+        return self.documents
 
     def _create_model(self, entry, n_values):
         return FragmentModel(entry["_id"], entry["signs"], n_values=n_values)

@@ -28,13 +28,17 @@ class ChapterCorpus(BaseCorpus):
         super().__init__(data, n_values, show_progress, name)
 
         load = self._load_threading if threading else self._load
-        self.documents = self.chapters = load(data)
+        self.documents = load(data)
         self._vocab = {
             sign
             for document in self.documents
             for ngram in document.ngrams
             for sign in ngram
         }
+
+    @property
+    def chapters(self):
+        return self.documents
 
     def _create_model(self, entry, n_values):
         return ChapterModel(entry, n_values=n_values)
