@@ -1,19 +1,17 @@
+from abc import ABC
 import datetime
+from functools import singledispatchmethod
 import json
 import pickle
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Set
 import pandas as pd
+
+from ebl_ngrams.metrics import no_weight, weight_by_len
 
 UNKNOWN_SIGN = "X"
 LINE_SEP = "#"
 DEFAULT_N_VALUES = (1, 2, 3)
 API_URL = "https://www.ebl.lmu.de/api/"
-
-
-def overlap_coefficient(A: set, B: set) -> float:
-    len_A, len_B = len(A), len(B)
-
-    return (len(A & B) / min(len(A), len(B))) if len_A and len_B else 0.0
 
 
 def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):
@@ -49,7 +47,7 @@ def postprocess(signs: pd.Series):
     return set(signs)
 
 
-class DocumentModel:
+class DocumentModel(ABC):
 
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
         self.id_ = self.url = id_
@@ -64,19 +62,19 @@ class DocumentModel:
             data = json.load(jf)
         return cls(data, n_values)
 
-    def intersection(self, other, *n_values):
+    def intersection(self, other, *n_values) -> set:
         A = self.get_ngrams(*n_values)
         B = other.get_ngrams(*n_values)
 
         return A & B
 
-    def overlap_coefficient(self, other, *n_values):
-        A = self.get_ngrams(*n_values)
-        B = other.get_ngrams(*n_values)
+    @singledispatchmethod
+    def match(self, other):
+        raise NotImplementedError(
+            f"Cannot match {type(self).__name__} with {type(other).__name__}"
+        )
 
-        return overlap_coefficient(A, B)
-
-    def get_ngrams(self, *n_values):
+    def get_ngrams(self, *n_values) -> set:
         return (
             {ngram for ngram in self.ngrams if len(ngram) in n_values}
             if n_values
@@ -94,7 +92,7 @@ class DocumentModel:
         return str(self)
 
     @property
-    def _vocab(self):
+    def _vocab(self) -> Set[str]:
         return {sign for ngram in self.ngrams for sign in ngram}
 
     def _compress(self, encoder: Dict[str, int]):
@@ -130,3 +128,21 @@ class DocumentModel:
             )
 
         return model
+
+
+@DocumentModel.match.register
+def match(
+    self: DocumentModel, other: DocumentModel, *n_values, length_weighting=False
+) -> float:
+    intersection = self.intersection(other, *n_values)
+    weighted_sum = weight_by_len if length_weighting else no_weight
+
+    intersection_size = weighted_sum(intersection)
+    self_size = weighted_sum(self.get_ngrams(*n_values))
+    other_size = weighted_sum(other.get_ngrams(*n_values))
+
+    return (
+        intersection_size / min(self_size, other_size)
+        if self_size and other_size
+        else 0.0
+    )
