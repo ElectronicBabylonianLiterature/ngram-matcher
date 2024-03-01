@@ -46,8 +46,14 @@ def postprocess(signs: pd.Series):
     return set(signs)
 
 
-class BaseDocument(ABC):
+def validate_n_values(n_values: Sequence[int]):
+    if any(n <= 0 for n in n_values):
+        raise ValueError("All n values must be greater than zero.")
+    if not any(n_values):
+        raise ValueError("Must pass at least one non-zero n value.")
 
+
+class BaseDocument(ABC):
     def __init__(self, id_: str, signs: str, n_values=DEFAULT_N_VALUES):
         self.id_ = self.url = id_
         self.signs = signs
