@@ -1,16 +1,8 @@
-from typing import Sequence, TypedDict
+from typing import Sequence
 
 from ebl_ngrams.base_corpus import BaseCorpus
-from ebl_ngrams.chapter_model import ChapterModel
+from ebl_ngrams.chapter_model import ChapterModel, ChapterRecord
 from ebl_ngrams.document_model import DEFAULT_N_VALUES
-
-
-class ChapterRecord(TypedDict):
-    signs: list
-    manuscripts: list
-    textId: dict
-    stage: int
-    name: str
 
 
 class ChapterCorpus(BaseCorpus):

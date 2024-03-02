@@ -1,3 +1,4 @@
+from typing import TypedDict
 import pandas as pd
 import requests
 from ebl_ngrams.document_model import (
@@ -60,6 +61,14 @@ def drop_colophon_lines(frame):
     return frame.loc[frame.line_type != "ColophonLine", "signs"]
 
 
+class ChapterRecord(TypedDict):
+    signs: list
+    manuscripts: list
+    textId: dict
+    stage: int
+    name: str
+
+
 class TextId:
     genre: str
     category: int
@@ -80,7 +89,7 @@ class TextId:
 class ChapterModel(BaseDocument):
     _collection = "chapters"
 
-    def __init__(self, data: dict, n_values=DEFAULT_N_VALUES):
+    def __init__(self, data: ChapterRecord, n_values=DEFAULT_N_VALUES):
         self.text_id = TextId(data["textId"])
         self.stage = Stage.from_name(data["stage"])
         self.name = data["name"].strip()
