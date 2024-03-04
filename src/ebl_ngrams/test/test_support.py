@@ -3,6 +3,8 @@ import numpy as np
 import re
 from typing import Sequence, Set, Tuple
 
+from ebl_ngrams.document_model import UNKNOWN_SIGN, NGramSet
+
 
 N_VALUES = [
     [1],
@@ -20,13 +22,13 @@ def sign_factory(size, seed=None) -> str:
 
     def mock_sign():
         if np.random.random() > 0.8:
-            return "X"
+            return UNKNOWN_SIGN
         return f"ABZ{np.random.randint(1, 200)}"
 
     return " ".join(mock_sign() for _ in range(size))
 
 
-def _create_ngrams(signs: Sequence[str], *n) -> Set[Tuple[str]]:
+def _create_ngrams(signs: Sequence[str], *n) -> NGramSet:
     if len(n) == 1:
         iterables = tee(signs, n[0])
 
@@ -38,9 +40,16 @@ def _create_ngrams(signs: Sequence[str], *n) -> Set[Tuple[str]]:
         return set.union(*(_create_ngrams(signs, n_) for n_ in n))
 
 
-def create_ngrams(signs: str, *n) -> Set[Tuple[str]]:
-    return _create_ngrams([s for s in signs.split() if s != "X"], *n)
+def create_ngrams(signs: str, *n) -> NGramSet:
+    return {
+        ngram
+        for ngram in _create_ngrams(signs.split(), *n)
+        if UNKNOWN_SIGN not in ngram
+    }
 
 
-def create_multiline_ngrams(signs: str, *n) -> Set[Tuple[str]]:
-    return create_ngrams(re.sub(r"\n+", " #\n", signs), *n)
+def create_multiline_ngrams(signs: str, *n) -> NGramSet:
+    return {
+        ngram
+        for ngram in create_ngrams(re.sub(r"\n+", " #\n", signs).rstrip(" \n#"), *n)
+    }

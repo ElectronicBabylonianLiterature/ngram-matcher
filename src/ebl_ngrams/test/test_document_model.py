@@ -29,8 +29,6 @@ def test_create_ngrams():
     expected = {
         ("A", "B"),
         ("B", "C"),
-        ("C", "#"),
-        ("#", "D"),
         ("D", "E"),
         ("E", "F"),
         ("F", "G"),
