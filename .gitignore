@@ -160,5 +160,6 @@ cython_debug/
 #.idea/
 
 data/
+experiments/
 .vscode/
 .DS_Store
