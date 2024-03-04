@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from operator import attrgetter, contains
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial, singledispatchmethod
+from functools import singledispatchmethod
 import datetime
 from typing import Callable, Sequence
 import pandas as pd
@@ -25,8 +24,7 @@ class BaseCorpus(ABC):
     documents: pd.Series
 
     def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
-        validate_n_values(n_values)
-        self.n_values = n_values
+        self.n_values = validate_n_values(n_values)
         self.retrieved_on = datetime.datetime.now()
         self.name = name
         self.data = data
@@ -38,6 +36,8 @@ class BaseCorpus(ABC):
         self._idf_table = None
         self._ngrams = None
         self._tf_idf_n_values = n_values
+
+        self.documents = self._load(data)
 
     @abstractmethod
     def _create_model(self, entry): ...
@@ -60,7 +60,6 @@ class BaseCorpus(ABC):
         cls,
         n_values: Sequence[int] = DEFAULT_N_VALUES,
         show_progress=True,
-        threading=True,
         name="",
         transform: Callable[[Sequence[dict]], Sequence[dict]] = None,
     ):
@@ -71,7 +70,6 @@ class BaseCorpus(ABC):
             response.json() if transform is None else transform(response.json()),
             n_values,
             show_progress,
-            threading,
             name,
         )
 
@@ -82,19 +80,6 @@ class BaseCorpus(ABC):
                 for entry in tqdm(data, **self._tqdm_config)
             ]
         )
-
-    def _load_threading(self, data: dict) -> pd.Series:
-        with ProcessPoolExecutor() as executor:
-            result = list(
-                tqdm(
-                    executor.map(
-                        partial(self._create_model, n_values=self.n_values), data
-                    ),
-                    **self._tqdm_config,
-                )
-            )
-
-        return self._to_series(result)
 
     def __len__(self):
         return len(self.documents)

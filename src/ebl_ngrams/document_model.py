@@ -21,6 +21,7 @@ def validate_n_values(n_values: Sequence[int]) -> Sequence[int]:
         raise ValueError("All n values must be greater than zero.")
     if not any(n_values):
         raise ValueError("Must pass at least one non-zero n value.")
+    return n_values
 
 
 def ngrams(signs: Sequence[str], n) -> Set[Tuple[str]]:

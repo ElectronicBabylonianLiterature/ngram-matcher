@@ -1,7 +1,7 @@
 from itertools import tee
 import numpy as np
 import re
-from typing import Sequence, Set, Tuple
+from typing import Sequence
 
 from ebl_ngrams.document_model import UNKNOWN_SIGN, NGramSet
 

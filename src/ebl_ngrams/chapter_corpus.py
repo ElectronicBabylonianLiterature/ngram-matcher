@@ -14,13 +14,9 @@ class ChapterCorpus(BaseCorpus):
         data: Sequence[ChapterRecord],
         n_values=DEFAULT_N_VALUES,
         show_progress=False,
-        threading=True,
         name="",
     ):
         super().__init__(data, n_values, show_progress, name)
-
-        load = self._load_threading if threading else self._load
-        self.documents = load(data)
         self._vocab = {
             sign
             for document in self.documents
