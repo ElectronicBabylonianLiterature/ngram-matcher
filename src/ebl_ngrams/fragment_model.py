@@ -6,6 +6,7 @@ from ebl_ngrams.document_model import (
     ngrams_multi_n,
     preprocess,
     postprocess,
+    validate_n_values,
 )
 
 
@@ -32,7 +33,7 @@ class FragmentModel(BaseDocument):
         return cls(id_, data["signs"], n_values)
 
     def set_ngrams(self, *n_values) -> "FragmentModel":
-        self.n_values = n_values or self.n_values
+        self.n_values = validate_n_values(n_values) if n_values else self.n_values
         self.ngrams = postprocess(
             ngrams_multi_n(preprocess(self.signs), *self.n_values)
         )

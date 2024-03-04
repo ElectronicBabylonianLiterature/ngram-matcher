@@ -16,7 +16,7 @@ API_URL = "https://www.ebl.lmu.de/api/"
 NGramSet = Set[Tuple[str]]
 
 
-def validate_n_values(n_values: Sequence[int]):
+def validate_n_values(n_values: Sequence[int]) -> Sequence[int]:
     if any(n <= 0 for n in n_values):
         raise ValueError("All n values must be greater than zero.")
     if not any(n_values):

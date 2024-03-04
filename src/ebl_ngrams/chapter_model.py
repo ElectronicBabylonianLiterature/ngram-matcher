@@ -131,8 +131,7 @@ class ChapterModel(BaseDocument):
         )
 
     def set_ngrams(self, *n_values) -> "ChapterModel":
-        validate_n_values(n_values)
-        self.n_values = n_values
+        self.n_values = validate_n_values(n_values) if n_values else self.n_values
         df = (
             pd.DataFrame({"manuscript": self._manuscripts, "signs": self.signs})
             .pipe(set_sigla)

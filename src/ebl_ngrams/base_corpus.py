@@ -25,6 +25,7 @@ class BaseCorpus(ABC):
     documents: pd.Series
 
     def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
+        validate_n_values(n_values)
         self.n_values = n_values
         self.retrieved_on = datetime.datetime.now()
         self.name = name
