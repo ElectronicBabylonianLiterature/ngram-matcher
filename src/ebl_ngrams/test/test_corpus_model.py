@@ -24,7 +24,8 @@ def mock_manuscript(**kwargs):
         "siglumDisambiguator": "",
         "colophon": {"numberOfLines": 0},
         "unplacedLines": {"numberOfLines": 0},
-    }.update(kwargs)
+    }
+    data.update(kwargs)
 
     return data
 
