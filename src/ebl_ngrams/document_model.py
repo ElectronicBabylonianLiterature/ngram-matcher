@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 import datetime
 from functools import singledispatchmethod
+from itertools import tee
 import json
-from typing import Dict, Sequence, Set
-import pandas as pd
+import re
+from typing import Sequence, Set, Tuple
 
 from ebl_ngrams.metrics import no_weight, weight_by_len
 
@@ -12,38 +13,7 @@ LINE_SEP = "#"
 DEFAULT_N_VALUES = (1, 2, 3)
 API_URL = "https://www.ebl.lmu.de/api/"
 
-
-def extract_ngrams(signs: pd.Series, n_values: Sequence[int]):
-    subframes = [
-        pd.concat([signs.shift(-i) for i in range(n)], axis=1)
-        .dropna()
-        .agg(tuple, axis=1)
-        for n in n_values
-    ]
-    ngrams = pd.concat(subframes)
-
-    return ngrams.drop_duplicates()
-
-
-def preprocess(raw_signs: str) -> pd.Series:
-    signs = pd.Series(raw_signs)
-
-    signs = signs.str.split("\n").explode().reset_index(drop=True)
-    signs = signs.str.strip()
-    signs.iloc[:-1] = signs.iloc[:-1].add(f" {LINE_SEP}")
-    signs = signs[~signs.str.fullmatch(rf"[{UNKNOWN_SIGN}{LINE_SEP}\s]*")]
-    signs = signs.str.split().explode()
-
-    return signs[signs.ne(UNKNOWN_SIGN)]
-
-
-def linewise_ngrams(signs: pd.Series, n_values: Sequence[int]) -> pd.Series:
-    return extract_ngrams(signs, n_values).reset_index(drop=True)
-
-
-def postprocess(signs: pd.Series):
-    signs = signs[~signs.map(set).map(lambda ngram: ngram <= {"X"})]
-    return set(signs)
+NGramSet = Set[Tuple[str]]
 
 
 def validate_n_values(n_values: Sequence[int]):
@@ -51,6 +21,34 @@ def validate_n_values(n_values: Sequence[int]):
         raise ValueError("All n values must be greater than zero.")
     if not any(n_values):
         raise ValueError("Must pass at least one non-zero n value.")
+
+
+def ngrams(signs: Sequence[str], n) -> Set[Tuple[str]]:
+    iterables = tee(signs, n)
+
+    for i, sub_iterable in enumerate(iterables):
+        for _ in range(i):
+            next(sub_iterable, None)
+    return set(zip(*iterables))
+
+
+def ngrams_multi_n(signs: Sequence[str], *n_values) -> NGramSet:
+    validate_n_values(n_values)
+    return set.union(*(ngrams(signs, n_) for n_ in n_values))
+
+
+def preprocess(signs: str) -> Sequence[str]:
+    lines = [line.strip() for line in signs.split("\n")]
+    lines = [
+        line
+        for line in lines
+        if not re.fullmatch(rf"[{UNKNOWN_SIGN}{LINE_SEP}\s]*", line)
+    ]
+    return f" {LINE_SEP} ".join(lines).split()
+
+
+def postprocess(ngrams: NGramSet) -> NGramSet:
+    return {ngram for ngram in ngrams if "X" not in ngram}
 
 
 class BaseDocument(ABC):
