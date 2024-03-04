@@ -5,9 +5,9 @@ from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
     BaseDocument,
-    preprocess,
+    ngrams_multi_n,
     postprocess,
-    linewise_ngrams,
+    preprocess,
     validate_n_values,
 )
 from ebl_ngrams.enums.provenance import Provenance
@@ -144,7 +144,7 @@ class ChapterModel(BaseDocument):
             .agg("\n".join)
             .map(
                 lambda signs: postprocess(
-                    linewise_ngrams(preprocess(signs), n_values=self.n_values)
+                    ngrams_multi_n(preprocess(signs), *self.n_values)
                 )
             )
             .to_dict()
