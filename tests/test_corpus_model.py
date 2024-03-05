@@ -4,7 +4,7 @@ from ebl_ngrams.chapter_corpus import ChapterCorpus, ChapterRecord
 from ebl_ngrams.document_model import DEFAULT_N_VALUES
 
 from ebl_ngrams.fragment_corpus import FragmentCorpus
-from ebl_ngrams.test.test_support import N_VALUES, create_multiline_ngrams
+from tests.test_support import N_VALUES, create_multiline_ngrams
 
 
 @pytest.fixture
@@ -63,7 +63,6 @@ def mock_fragment_corpus(mock_fragments_data):
         mock_fragments_data,
         DEFAULT_N_VALUES,
         show_progress=False,
-        threading=False,
         name="MockFragmentarium",
     )
 
@@ -74,6 +73,16 @@ def mock_chapter_corpus(mock_chapter_data):
         mock_chapter_data,
         DEFAULT_N_VALUES,
         show_progress=False,
-        threading=False,
         name="MockFragmentarium",
     )
+
+
+@pytest.mark.parametrize("n_values", N_VALUES)
+def test_get_ngrams(mock_fragment_corpus, n_values, mock_fragments_data):
+    expected = set.union(
+        *(
+            create_multiline_ngrams(entry["signs"], *n_values)
+            for entry in mock_fragments_data
+        )
+    )
+    assert mock_fragment_corpus.get_ngrams(*n_values) == expected

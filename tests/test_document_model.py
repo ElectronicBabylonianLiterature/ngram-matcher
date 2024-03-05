@@ -2,7 +2,7 @@ import pytest
 from ebl_ngrams.document_model import DEFAULT_N_VALUES
 from ebl_ngrams.document_model import API_URL
 from ebl_ngrams.fragment_model import FragmentModel
-from ebl_ngrams.test.test_support import (
+from tests.test_support import (
     N_VALUES,
     create_multiline_ngrams,
     create_ngrams,
