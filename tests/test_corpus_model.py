@@ -1,9 +1,8 @@
 from typing import Sequence
 import pytest
-from ebl_ngrams.chapter_corpus import ChapterCorpus, ChapterRecord
-from ebl_ngrams.document_model import DEFAULT_N_VALUES
+from ebl_ngrams import DEFAULT_N_VALUES, ChapterCorpus, FragmentCorpus
+from ebl_ngrams.chapter_model import ChapterRecord
 
-from ebl_ngrams.fragment_corpus import FragmentCorpus
 from tests.test_support import N_VALUES, create_multiline_ngrams
 
 
