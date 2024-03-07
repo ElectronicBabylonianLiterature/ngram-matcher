@@ -1,6 +1,6 @@
 from typing import Sequence
 import pytest
-from ebl_ngrams import DEFAULT_N_VALUES, ChapterCorpus, FragmentCorpus
+from ebl_ngrams import DEFAULT_N_VALUES, ChapterCorpus, FragmentCorpus, ChapterModel
 from ebl_ngrams.chapter_model import ChapterRecord
 
 from tests.test_support import N_VALUES, create_multiline_ngrams
@@ -57,6 +57,13 @@ def mock_chapter_data() -> Sequence[ChapterRecord]:
 
 
 @pytest.fixture
+def mock_chapter(mock_chapter_data) -> ChapterModel:
+    data = mock_chapter_data[0]
+    partial_signs = ["\n".join(signs.split("\n")[:2]) for signs in data["signs"]]
+    return ChapterModel({**data, "signs": partial_signs}, DEFAULT_N_VALUES)
+
+
+@pytest.fixture
 def mock_fragment_corpus(mock_fragments_data):
     return FragmentCorpus(
         mock_fragments_data,
@@ -85,3 +92,18 @@ def test_get_ngrams(mock_fragment_corpus, n_values, mock_fragments_data):
         )
     )
     assert mock_fragment_corpus.get_ngrams(*n_values) == expected
+
+
+@pytest.mark.parametrize("n_values", N_VALUES)
+def test_intersect_document(mock_chapter_corpus, mock_chapter, n_values):
+    intersections = (
+        mock_chapter_corpus.get_ngrams_by_document(*n_values)
+        .map(mock_chapter.get_ngrams(*n_values).intersection)
+        .to_list()
+    )
+    expected = [{x for x in s if len(x) in n_values} for s in intersections]
+
+    assert (
+        mock_chapter_corpus.intersection(mock_chapter, *n_values).to_list() == expected
+    )
+
