@@ -198,7 +198,7 @@ class BaseCorpus(ABC):
         self._idf_table = None
 
     @singledispatchmethod
-    def match_tf_idf(self, other):
+    def match_tf_idf(self, other, *args, **kwargs):
         raise NotImplementedError(
             f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
@@ -207,12 +207,12 @@ class BaseCorpus(ABC):
     def _(
         self, other: BaseDocument, *n_values, length_weighting=False, normalize=False
     ) -> pd.Series:
-        other_ngrams = other.get_ngrams(*n_values)
-        self.encoder.update(other_ngrams)
-
         this_ngrams_arr = (
             self.get_ngrams_by_document(*n_values).map(self.encoder.encode_many).values
         )
+
+        other_ngrams = other.get_ngrams(*n_values)
+        self.encoder.update(other_ngrams)
         other_ngrams_arr = np.array(list(self.encoder.encode_many(other_ngrams)))
 
         cooccurrence_matrix = np.vectorize(lambda ngram, ngrams: ngram in ngrams)(
@@ -285,5 +285,12 @@ def _(
 
 
 @BaseCorpus.match_tf_idf.register
-def _(self, other: BaseCorpus, *n_values, length_weighting=False) -> pd.DataFrame:
-    pass
+def _(
+    self, other: BaseCorpus, *n_values, length_weighting=False, normalize=False
+) -> pd.DataFrame:
+    tqdm.pandas()
+    return other.documents[other.get_ngrams_by_document().astype(bool)].progress_apply(
+        lambda doc: self.match_tf_idf(
+            doc, *n_values, length_weighting=length_weighting, normalize=normalize
+        )
+    )
