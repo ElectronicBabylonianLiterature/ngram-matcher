@@ -1,5 +1,5 @@
 import pytest
-from ebl_ngrams import DEFAULT_N_VALUES, API_URL, FragmentModel
+from ebl_ngrams import DEFAULT_N_VALUES, API_URL, FragmentModel, ChapterModel
 from tests.test_support import (
     N_VALUES,
     create_multiline_ngrams,
