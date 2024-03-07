@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from operator import attrgetter, contains
 from functools import singledispatchmethod
 import datetime
-from typing import Callable, Sequence
+from typing import Callable, Optional, Sequence, Set
 import pandas as pd
 import numpy as np
 
@@ -13,12 +13,45 @@ from ebl_ngrams.document_model import (
     API_URL,
     DEFAULT_N_VALUES,
     BaseDocument,
+    NGramSet,
     validate_n_values,
 )
 from ebl_ngrams.metrics import no_weight, weight_by_len
 from copy import deepcopy
 
 
+class IntegerEncoder:
+    def __init__(self, items: Optional[Sequence] = None):
+        self._encode = {}
+        self._decode = {}
+
+        if items:
+            for key, item in enumerate(set(items)):
+                self._encode[item] = key
+                self._decode[key] = item
+
+    def add_item(self, item):
+        if item not in self.items:
+            key = max(self._decode) + 1
+            self._encode[item] = key
+            self._decode[key] = item
+
+    @property
+    def items(self):
+        return set(self._encode)
+
+    def update(self, items):
+        for item in set(items) - self.items:
+            self.add_item(item)
+
+    def decode(self, key):
+        return self._decode[key]
+
+    def encode(self, item):
+        return self._encode[item]
+
+    def encode_many(self, items):
+        return set(map(self.encode, items))
 class BaseCorpus(ABC):
     _collection: str
     documents: pd.Series
