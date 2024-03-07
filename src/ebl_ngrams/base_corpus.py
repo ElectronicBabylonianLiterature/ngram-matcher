@@ -52,6 +52,8 @@ class IntegerEncoder:
 
     def encode_many(self, items):
         return set(map(self.encode, items))
+
+
 class BaseCorpus(ABC):
     _collection: str
     documents: pd.Series
@@ -68,9 +70,9 @@ class BaseCorpus(ABC):
         }
         self._idf_table = None
         self._ngrams = None
-        self._tf_idf_n_values = n_values
 
         self.documents = self._load(data)
+        self.encoder = IntegerEncoder(self.get_ngrams())
 
     @abstractmethod
     def _create_model(self, entry): ...
@@ -137,7 +139,7 @@ class BaseCorpus(ABC):
             }
         return self._ngrams
 
-    def get_ngrams(self, *n_values) -> set:
+    def get_ngrams(self, *n_values) -> NGramSet:
         n_values = n_values or self.n_values
         return (
             {ngram for ngram in self.ngrams if len(ngram) in n_values}
@@ -191,37 +193,6 @@ class BaseCorpus(ABC):
 
         return result.sort_values(ascending=False)
 
-    def _init_idf(self, *n_values: Sequence[int]) -> None:
-        n_values = n_values or self.n_values
-        skip_init = (
-            set(n_values) == set(self._tf_idf_n_values) and self._idf_table is not None
-        )
-
-        if skip_init:
-            return
-
-        self._tf_idf_n_values = n_values
-
-        unique_ngrams = pd.Series(list(self.get_ngrams(*n_values)))
-
-        df = pd.DataFrame(
-            np.vectorize(contains)(
-                self.get_ngrams_by_document(*n_values), unique_ngrams.values[:, None]
-            ),
-            index=unique_ngrams,
-        )
-        N = len(self.documents) + 1
-        docs_with_ngram = df.sum(axis=1) + 1
-
-        idf = np.log(N / docs_with_ngram) + 1
-        self._idf_table = idf.to_dict()
-
-    def _weight_tf_idf(self, ngrams: set):
-        return sum(self._idf_table.get(term, 0) for term in ngrams)
-
-    def _weight_tf_idf_length(self, ngrams: set):
-        return sum(self._idf_table.get(term, 0) * len(term) ** 2 for term in ngrams)
-
     def _reset_ngrams(self):
         self._ngrams = None
         self._idf_table = None
@@ -232,17 +203,49 @@ class BaseCorpus(ABC):
             f"Cannot match {type(self).__name__} with {type(other).__name__}"
         )
 
-    @match_tf_idf.register(BaseDocument)
-    def _(self, other: BaseDocument, *n_values, length_weighting=False) -> pd.Series:
-        self._init_idf(*n_values)
-        weight_func = (
-            self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
+    @match_tf_idf.register
+    def _(
+        self, other: BaseDocument, *n_values, length_weighting=False, normalize=False
+    ) -> pd.Series:
+        other_ngrams = other.get_ngrams(*n_values)
+        self.encoder.update(other_ngrams)
+
+        this_ngrams_arr = (
+            self.get_ngrams_by_document(*n_values).map(self.encoder.encode_many).values
         )
-        return (
+        other_ngrams_arr = np.array(list(self.encoder.encode_many(other_ngrams)))
+
+        cooccurrence_matrix = np.vectorize(lambda ngram, ngrams: ngram in ngrams)(
+            other_ngrams_arr, this_ngrams_arr[:, None]
+        )
+
+        N = len(self.documents) + 1
+        idf = dict(
+            zip(
+                other_ngrams_arr,
+                np.log(N / (cooccurrence_matrix.sum(axis=0) + 1)) + 1,
+            )
+        )
+
+        def weight_tf_idf(ngram):
+            return idf[ngram]
+
+        def weight_length(ngram):
+            return weight_tf_idf(ngram) * len(ngram) ** 2
+
+        weight = weight_length if length_weighting else weight_tf_idf
+
+        result = (
             self.intersection(other, *n_values)
-            .map(weight_func)
+            .map(self.encoder.encode_many)
+            .map(lambda ngrams: sum(weight(ngram) for ngram in ngrams))
             .sort_values(ascending=False)
         )
+
+        if normalize:
+            result /= sum(weight(ngram) for ngram in other_ngrams_arr)
+
+        return result
 
     def filter(self, condition: Callable[[BaseDocument], bool]) -> "BaseCorpus":
         corpus = deepcopy(self)
@@ -283,8 +286,4 @@ def _(
 
 @BaseCorpus.match_tf_idf.register
 def _(self, other: BaseCorpus, *n_values, length_weighting=False) -> pd.DataFrame:
-    self._init_idf(*n_values)
-    weight_func = (
-        self._weight_tf_idf_length if length_weighting else self._weight_tf_idf
-    )
-    return self.intersection(other).map(weight_func)
+    pass
