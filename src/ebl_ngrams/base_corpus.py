@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from operator import attrgetter, contains
+from operator import attrgetter
 from functools import singledispatchmethod
 import datetime
-from typing import Callable, Optional, Sequence, Set
+from typing import Callable, Optional, Sequence
 import pandas as pd
 import numpy as np
 
@@ -179,7 +179,13 @@ class BaseCorpus(ABC):
         )
 
     @match.register(BaseDocument)
-    def _(self, other: BaseDocument, *n_values, length_weighting=False) -> pd.Series:
+    def _(
+        self,
+        other: BaseDocument,
+        *n_values,
+        length_weighting=False,
+        include_overlaps=False,
+    ) -> pd.Series:
         n_values = n_values or self.n_values
         intersection = self.intersection(other, *n_values)
         weighted_sum = weight_by_len if length_weighting else no_weight
@@ -189,7 +195,18 @@ class BaseCorpus(ABC):
         other_size = weighted_sum(other.get_ngrams(*n_values))
 
         result = intersection_sizes / np.minimum(self_sizes, other_size)
-        result = result.rename(other.id_)
+        result = result.rename(other.id_).fillna(0.0)
+
+        if include_overlaps:
+            return (
+                result.to_frame("score")
+                .join(
+                    intersection.str.len()
+                    .to_frame("overlap_size")
+                    .assign(overlap=intersection)
+                )
+                .sort_values(["score", "overlap_size"], ascending=False)
+            )
 
         return result.sort_values(ascending=False)
 
