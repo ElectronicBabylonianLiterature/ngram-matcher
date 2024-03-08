@@ -13,6 +13,18 @@ is unsusceptible with respect to slight variations across documents and at the s
 effectively for the task of finding matching pieces in a semi-automatic setting by reducing the number of texts an expert needs to
 review from tens of thousands to a few hundred.
 
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Loading Models](#loading-models)
+  - [Matching](#matching)
+  - [Matching Strategies](#matching-strategies)
+    - [1. Overlap coefficient](#1-overlap-coefficient)
+    - [2. Overlap coefficient with length weighting](#2-overlap-coefficient-with-length-weighting)
+    - [3. TF-IDF-based overlap](#3-tf-idf-based-overlap)
+    - [4. TF-IDF-based overlap with length weighting](#4-tf-idf-based-overlap-with-length-weighting)
+  - [Filtering Options](#filtering-options)
+  - [Saving Models to Disk](#saving-models-to-disk)
+
 ## Installation
 
 It is recommended to use a virtual environment. Set it up with a tool of your choice, e.g., the built-in [venv](https://docs.python.org/3/library/venv.html). To install the package run
@@ -191,7 +203,7 @@ data. For more details on filtering see below. E.g.:
 [143 rows x 837 columns]
 ```
 
-### Match Strategies
+### Matching Strategies
 
 There are a number of matching strategies available. The basic matching is rather naive
 but also very fast. TF-IDF is better in theory but very slow or even unfeasible in some settings.
