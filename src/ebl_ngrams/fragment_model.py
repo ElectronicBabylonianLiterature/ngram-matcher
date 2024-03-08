@@ -29,6 +29,7 @@ class FragmentModel(BaseDocument):
 
     @classmethod
     def load(cls, id_: str, n_values=DEFAULT_N_VALUES) -> "FragmentModel":
+        id_ = id_.split("/")[-1]
         data = fetch_fragment(id_)
         return cls(id_, data["signs"], n_values)
 
