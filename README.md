@@ -1,3 +1,5 @@
+See the paper at: [Reconstruction of Cuneiform Literary Texts as Text Matching](https://aclanthology.org/2024.lrec-main.1197) (Simonjetz et al., LREC-COLING 2024).
+
 # N-Gram-Based Cuneiform Fragment Matcher
 
 A Python package to load cuneiform sign data from the database of the [electronic Babylonian Library](https://www.ebl.lmu.de/) (eBL) platform
