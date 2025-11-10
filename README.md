@@ -80,7 +80,7 @@ available n-grams. E.g., to match only 2- and 3-grams call `chapter_corpus.match
 /L/1/2/SB/VII         0.292056
 /L/1/4/SB/XI          0.273364
 /L/1/2/SB/VI          0.271028
-                        ...   
+                        ...
 /L/1/9/OB/Susa        0.081776
 /L/1/4/OB/Schøyen₁    0.078873
 /L/1/4/OB/Nippur      0.070093
@@ -142,7 +142,7 @@ K.20224           1.0
 1876,1117.2651    1.0
 K.7675            1.0
 K.21593           1.0
-                 ... 
+                 ...
 K.17937           0.0
 K.23031           0.0
 K.20698           0.0
@@ -159,7 +159,7 @@ K.23044    1.0
 K.16519    1.0
 K.21735    1.0
 K.23083    1.0
-          ... 
+          ...
 K.22596    0.0
 K.22607    0.0
 K.18715    0.0
@@ -173,7 +173,7 @@ Name: /L/1/4/SB/I, Length: 26755, dtype: float64
 /L/1/2/SB/VII         0.292056
 /L/1/4/SB/XI          0.273364
 /L/1/2/SB/VI          0.271028
-                        ...   
+                        ...
 /L/1/9/OB/Susa        0.081776
 /L/1/4/OB/Schøyen₁    0.078873
 /L/1/4/OB/Nippur      0.070093
@@ -204,6 +204,39 @@ data. For more details on filtering see below. E.g.:
 
 [143 rows x 837 columns]
 ```
+
+### Working with Custom Sign Strings
+
+You can use the `FragmentModel` class to calculate match scores for any cuneiform sign text without
+loading data from the eBL database. This is useful for testing, prototyping, or working with custom data.
+One practical application is matching OCRed sign strings from tablet images against the corpus, but the
+same approach can be applied to any sign sequence data from external sources.
+
+```python
+from ebl_ngrams import FragmentModel
+
+# Create two sample sign strings
+signs1 = "ABZ58 ABZ441 ABZ207 ABZ55 ABZ139"
+signs2 = "ABZ58 ABZ441 ABZ207 ABZ60 ABZ139"
+
+# Create FragmentModel instances
+doc1 = FragmentModel(id_="sample1", signs=signs1)
+doc1.set_ngrams()
+
+doc2 = FragmentModel(id_="sample2", signs=signs2)
+doc2.set_ngrams()
+
+# Calculate match score
+score = doc1.match(doc2)
+print(f"Sign string 1: {signs1}")
+print(f"Sign string 2: {signs2}")
+print(f"Match score: {score:.4f}")
+```
+
+More elevation metrics: You can customize the `FragmentModel` to output additional evaluation metrics by
+overriding the `match` method. For example, to calculate the detailed overlap information similar to
+what `ChapterCorpus` provides, you can refer to the `match` method implementation in `base_corpus.py`
+and adapt it to your needs.
 
 ### Matching Strategies
 
