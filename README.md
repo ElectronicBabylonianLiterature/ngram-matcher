@@ -209,34 +209,55 @@ data. For more details on filtering see below. E.g.:
 
 You can use the `FragmentModel` class to calculate match scores for any cuneiform sign text without
 loading data from the eBL database. This is useful for testing, prototyping, or working with custom data.
-One practical application is matching OCRed sign strings from tablet images against the corpus, but the
-same approach can be applied to any sign sequence data from external sources.
+
+Example use case: Evaluating OCRed sign strings
+
+A practical application is comparing OCRed sign strings from tablet images against original
+transliterations to evaluate OCR accuracy:
 
 ```python
 from ebl_ngrams import FragmentModel
 
-# Create two sample sign strings
-signs1 = "ABZ58 ABZ441 ABZ207 ABZ55 ABZ139"
-signs2 = "ABZ58 ABZ441 ABZ207 ABZ60 ABZ139"
+# Original and OCRed sign strings
+original_signs = "ABZ58 ABZ441 ABZ207 ABZ55 ABZ139"
+ocred_signs = "ABZ58 ABZ441 ABZ207 ABZ60 ABZ139"
 
 # Create FragmentModel instances
-doc1 = FragmentModel(id_="sample1", signs=signs1)
-doc1.set_ngrams()
+original = FragmentModel(id_="original", signs=original_signs)
+original.set_ngrams()
 
-doc2 = FragmentModel(id_="sample2", signs=signs2)
-doc2.set_ngrams()
+ocred = FragmentModel(id_="ocred", signs=ocred_signs)
+ocred.set_ngrams()
 
 # Calculate match score
-score = doc1.match(doc2)
-print(f"Sign string 1: {signs1}")
-print(f"Sign string 2: {signs2}")
+score = original.match(ocred)
 print(f"Match score: {score:.4f}")
 ```
 
-More elevation metrics: You can customize the `FragmentModel` to output additional evaluation metrics by
-overriding the `match` method. For example, to calculate the detailed overlap information similar to
-what `ChapterCorpus` provides, you can refer to the `match` method implementation in `base_corpus.py`
-and adapt it to your needs.
+More evaluation metrics: You can customize the `FragmentModel` to output additional evaluation metrics by
+overriding the `match` method. For example, to calculate the detailed overlap information similar to and adapt it to your needs.
+
+Example of adding overlap calculation:
+
+```python
+class FragmentModelWithOverlaps(FragmentModel):
+   def match_with_overlaps(
+   self, 
+   other: FragmentModel, 
+   *n_values, 
+   length_weighting=False
+   ) -> Tuple[float, dict]:
+
+      intersection = self.intersection(other, *n_values)
+      socre = super().match(other, *n_values, length_weighting=length_weighting)
+
+      overlap_info = {
+         'overlap': intersection,
+         'overlap_size': len(intersection)
+      }
+      
+      return score, overlap_info
+```
 
 ### Matching Strategies
 
