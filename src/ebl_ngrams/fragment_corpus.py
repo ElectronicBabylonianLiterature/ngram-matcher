@@ -2,7 +2,7 @@ from typing import Sequence, TypedDict
 
 from ebl_ngrams.document_model import DEFAULT_N_VALUES
 from ebl_ngrams.base_corpus import BaseCorpus
-from ebl_ngrams.fragment_model import FragmentModel
+from ebl_ngrams.fragment_model import FragmentModel, OcredFragmentModel
 
 
 class FragmentRecord(TypedDict):
@@ -33,3 +33,15 @@ class FragmentCorpus(BaseCorpus):
 
     def _create_model(self, entry, n_values):
         return FragmentModel(entry["_id"], entry["signs"], n_values=n_values)
+
+
+class OcredFragmentRecord(TypedDict):
+    _id: str
+    ocredSigns: str
+
+
+class OcredFragmentCorpus(FragmentCorpus):
+    _api_url = "fragments/all-ocred-signs"
+
+    def _create_model(self, entry, n_values):
+        return OcredFragmentModel(entry["_id"], entry["ocredSigns"], n_values=n_values)

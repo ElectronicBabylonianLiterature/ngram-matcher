@@ -42,3 +42,15 @@ class FragmentModel(BaseDocument):
 
     def __len__(self):
         return len(self.ngrams)
+
+
+class OcredFragmentModel(FragmentModel):
+
+    @classmethod
+    def load(cls, id_: str, n_values=DEFAULT_N_VALUES) -> "OcredFragmentModel":
+        id_ = id_.split("/")[-1]
+        response = requests.get(f"{API_URL}fragments/{id_}")
+        response.raise_for_status()
+
+        ocred_signs = response.json()["ocredSigns"]
+        return cls(id_, ocred_signs, n_values)
