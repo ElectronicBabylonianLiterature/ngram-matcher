@@ -58,11 +58,12 @@ class BaseCorpus(ABC):
     _collection: str
     documents: pd.Series
 
-    def __init__(self, data, n_values: Sequence[int], show_progress=False, name=""):
+    def __init__(self, data, n_values: Sequence[int], show_progress=False, name="", use_ocr=False):
         self.n_values = validate_n_values(n_values)
         self.retrieved_on = datetime.datetime.now()
         self.name = name
         self.data = data
+        self.use_ocr = use_ocr
         self._tqdm_config = {
             "total": len(data) if show_progress else 0,
             "desc": f"Building {self._collection} model",
@@ -97,8 +98,10 @@ class BaseCorpus(ABC):
         show_progress=True,
         name="",
         transform: Callable[[Sequence[dict]], Sequence[dict]] = None,
+        use_ocr=False,
     ):
-        response = requests.get(f"{API_URL}{cls._api_url}")
+        api_url = cls._api_url_ocr if use_ocr else cls._api_url
+        response = requests.get(f"{API_URL}{api_url}")
         response.raise_for_status()
 
         return cls(
@@ -106,6 +109,7 @@ class BaseCorpus(ABC):
             n_values,
             show_progress,
             name,
+            use_ocr=use_ocr,
         )
 
     def _load(self, data: dict) -> pd.Series:

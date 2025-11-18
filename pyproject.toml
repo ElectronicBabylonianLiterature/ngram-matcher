@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ebl-ngram-matcher"
-version = "0.1.0"
+version = "0.2.0"
 description = "A toolset to extract and match n-gram models from the electronic Babylonian Library database"
 authors = [
     {name = "Fabian Simonjetz"}
