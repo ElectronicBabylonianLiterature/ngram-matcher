@@ -95,7 +95,7 @@ available n-grams. E.g., to match only 2- and 3-grams call `chapter_corpus.match
 /L/1/2/SB/VII         0.292056
 /L/1/4/SB/XI          0.273364
 /L/1/2/SB/VI          0.271028
-                        ...   
+                        ...
 /L/1/9/OB/Susa        0.081776
 /L/1/4/OB/Schøyen₁    0.078873
 /L/1/4/OB/Nippur      0.070093
@@ -157,7 +157,7 @@ K.20224           1.0
 1876,1117.2651    1.0
 K.7675            1.0
 K.21593           1.0
-                 ... 
+                 ...
 K.17937           0.0
 K.23031           0.0
 K.20698           0.0
@@ -174,7 +174,7 @@ K.23044    1.0
 K.16519    1.0
 K.21735    1.0
 K.23083    1.0
-          ... 
+          ...
 K.22596    0.0
 K.22607    0.0
 K.18715    0.0
@@ -188,7 +188,7 @@ Name: /L/1/4/SB/I, Length: 26755, dtype: float64
 /L/1/2/SB/VII         0.292056
 /L/1/4/SB/XI          0.273364
 /L/1/2/SB/VI          0.271028
-                        ...   
+                        ...
 /L/1/9/OB/Susa        0.081776
 /L/1/4/OB/Schøyen₁    0.078873
 /L/1/4/OB/Nippur      0.070093
@@ -218,6 +218,60 @@ data. For more details on filtering see below. E.g.:
 /Mag/1/1/SB/V     0.334884  0.235849  ...  0.317949  0.160677
 
 [143 rows x 837 columns]
+```
+
+### Working with Custom Sign Strings
+
+You can use the `FragmentModel` class to calculate match scores for any cuneiform sign text without
+loading data from the eBL database. This is useful for testing, prototyping, or working with custom data.
+
+Example use case: Evaluating OCRed sign strings
+
+A practical application is comparing OCRed sign strings from tablet images against original
+transliterations to evaluate OCR accuracy:
+
+```python
+from ebl_ngrams import FragmentModel
+
+# Original and OCRed sign strings
+original_signs = "ABZ58 ABZ441 ABZ207 ABZ55 ABZ139"
+ocred_signs = "ABZ58 ABZ441 ABZ207 ABZ60 ABZ139"
+
+# Create FragmentModel instances
+original = FragmentModel(id_="original", signs=original_signs)
+original.set_ngrams()
+
+ocred = FragmentModel(id_="ocred", signs=ocred_signs)
+ocred.set_ngrams()
+
+# Calculate match score
+score = original.match(ocred)
+print(f"Match score: {score:.4f}")
+```
+
+More evaluation metrics: You can customize the `FragmentModel` to output additional evaluation metrics by
+overriding the `match` method. For example, to calculate the detailed overlap information similar to and adapt it to your needs.
+
+Example of adding overlap calculation:
+
+```python
+class FragmentModelWithOverlaps(FragmentModel):
+   def match_with_overlaps(
+   self, 
+   other: FragmentModel, 
+   *n_values, 
+   length_weighting=False
+   ) -> Tuple[float, dict]:
+
+      intersection = self.intersection(other, *n_values)
+      socre = super().match(other, *n_values, length_weighting=length_weighting)
+
+      overlap_info = {
+         'overlap': intersection,
+         'overlap_size': len(intersection)
+      }
+      
+      return score, overlap_info
 ```
 
 ### Matching Strategies
