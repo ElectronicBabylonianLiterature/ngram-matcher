@@ -15,6 +15,7 @@ class ChapterCorpus(BaseCorpus):
         n_values=DEFAULT_N_VALUES,
         show_progress=False,
         name="",
+        use_ocr=False,
     ):
         super().__init__(data, n_values, show_progress, name)
         self._vocab = {

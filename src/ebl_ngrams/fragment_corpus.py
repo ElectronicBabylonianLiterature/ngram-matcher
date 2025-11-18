@@ -13,6 +13,7 @@ class FragmentRecord(TypedDict):
 class FragmentCorpus(BaseCorpus):
     _collection = "fragments"
     _api_url = "fragments/all-signs"
+    _api_url_ocr = "fragments/all-ocred-signs"
 
     def __init__(
         self,
@@ -20,9 +21,10 @@ class FragmentCorpus(BaseCorpus):
         n_values=DEFAULT_N_VALUES,
         show_progress=False,
         name="",
+        use_ocr=False,
     ):
-
-        super().__init__(data, n_values, show_progress, name)
+        self.use_ocr = use_ocr
+        super().__init__(data, n_values, show_progress, name, use_ocr)
         self._vocab = {
             sign for fragment in self for ngram in fragment.ngrams for sign in ngram
         }
@@ -32,4 +34,5 @@ class FragmentCorpus(BaseCorpus):
         return self.documents
 
     def _create_model(self, entry, n_values):
-        return FragmentModel(entry["_id"], entry["signs"], n_values=n_values)
+        signs_field = "ocredSigns" if self.use_ocr else "signs"
+        return FragmentModel(entry["_id"], entry[signs_field], n_values=n_values)

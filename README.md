@@ -15,17 +15,18 @@ is unsusceptible with respect to slight variations across documents and at the s
 effectively for the task of finding matching pieces in a semi-automatic setting by reducing the number of texts an expert needs to
 review from tens of thousands to a few hundred.
 
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Loading Models](#loading-models)
-  - [Matching](#matching)
-  - [Matching Strategies](#matching-strategies)
-    - [1. Overlap coefficient](#1-overlap-coefficient)
-    - [2. Overlap coefficient with length weighting](#2-overlap-coefficient-with-length-weighting)
-    - [3. TF-IDF-based overlap](#3-tf-idf-based-overlap)
-    - [4. TF-IDF-based overlap with length weighting](#4-tf-idf-based-overlap-with-length-weighting)
-  - [Filtering Options](#filtering-options)
-  - [Saving Models to Disk](#saving-models-to-disk)
+- [N-Gram-Based Cuneiform Fragment Matcher](#n-gram-based-cuneiform-fragment-matcher)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Loading Models](#loading-models)
+    - [Matching](#matching)
+    - [Matching Strategies](#matching-strategies)
+      - [1. Overlap coefficient](#1-overlap-coefficient)
+      - [2. Overlap coefficient with length weighting](#2-overlap-coefficient-with-length-weighting)
+      - [3. TF-IDF-based overlap](#3-tf-idf-based-overlap)
+      - [4. TF-IDF-based overlap with length weighting](#4-tf-idf-based-overlap-with-length-weighting)
+    - [Filtering Options](#filtering-options)
+    - [Saving Models to Disk](#saving-models-to-disk)
 
 ## Installation
 
@@ -58,6 +59,20 @@ test_fragment = FragmentModel.load("Test.Fragment")
 # load chapters
 chapter_corpus = ChapterCorpus.load()
 test_chapter = ChapterModel.load("/L/1/4/SB/I")
+```
+
+**Loading with OCR data:**
+
+You can optionally load fragments generated automatically by means of OCR (Optical Character Recognition) data by setting `use_ocr=True`:
+
+```python
+# load fragments with OCR data
+fragmentarium = FragmentCorpus.load(use_ocr=True)
+
+# default behavior (without OCR)
+fragmentarium = FragmentCorpus.load(use_ocr=False)
+# or simply
+fragmentarium = FragmentCorpus.load()
 ```
 
 When loading fragments, pass either the url or just the **id** (aka museum number; displayed in the
