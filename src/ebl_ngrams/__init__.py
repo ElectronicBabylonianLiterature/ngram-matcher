@@ -1,5 +1,5 @@
 from ebl_ngrams.document_model import DEFAULT_N_VALUES, API_URL
-from ebl_ngrams.fragment_model import FragmentModel, OcredFragmentModel
-from ebl_ngrams.fragment_corpus import FragmentCorpus, OcredFragmentCorpus
+from ebl_ngrams.fragment_model import FragmentModel
+from ebl_ngrams.fragment_corpus import FragmentCorpus
 from ebl_ngrams.chapter_model import ChapterModel
 from ebl_ngrams.chapter_corpus import ChapterCorpus
